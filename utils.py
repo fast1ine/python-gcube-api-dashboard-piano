@@ -21,7 +21,7 @@ class Utils():
 
     # 포트 찾기
     def findBluetoothDongle(self):
-        port_flag = False
+        not_found_flag = False
         PORT = ""
         while not PORT:
             ports = list(serial.tools.list_ports.comports())
@@ -29,26 +29,26 @@ class Utils():
             for i in range(port_len):
                 p = ports[i]
                 try:
-                    ser = serial.serial_for_url(str(p.device), baudrate=115200, timeout=1, write_timeout=1)
+                    ser = serial.serial_for_url(str(p.device), baudrate=115200, timeout=1, write_timeout=0.5) # ?????????????
                     ser.write(self.PingPongDongle_connect_bytes)
-                    print("abdc") # ?????????????
+                    print("abdc") 
                     data = ser.read(11)
+                    print(data)
                     if data == self.PingPongDongle_connect_bytes:
                         ser.close()
                         print("Found device: " + str(p.description))
                         PORT = str(p.device)
-                        port_flag = True
                         return PORT
                 except:
                     try:
                         ser.close()
                     except:
                         pass
-                    print("Something wrong!")
+                    print("something wrong")
 
-                if i == port_len-1 and port_flag == False:
-                    print("Device not found. Please connect the BluetoothUSB.")
-                    port_flag = "NotFound"
+            if not_found_flag == False:
+                print("Device not found. Please connect the BluetoothUSB, or shut down other port connected program.")
+                not_found_flag = True
 
     def connectSerialURL(self, port):
         try:
