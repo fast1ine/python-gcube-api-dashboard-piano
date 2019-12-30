@@ -73,7 +73,7 @@ class rawProtocol(Protocol):
                         if i == 7:
                             print("Connected robots: 8")# 7대 slave 로봇 연결
             self.init_buffer() # 버퍼 초기화
-
+            
     # 데이터 보낼 때 함수
     def write(self, data):
         if self.running:

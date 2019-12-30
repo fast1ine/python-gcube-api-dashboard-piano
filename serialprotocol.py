@@ -74,10 +74,8 @@ class ReaderThread(threading.Thread):
             return
         error = None
         self._connection_made.set()
-        while True: # 무한 루프 for USB 연결
+        while not self.end_flag: # 무한 루프 for USB 연결
             #print("Threadworking")
-            if self.end_flag: # 쓰레드 종료
-                break
             if not self.serial or (not self.serial.is_open and not self.alive): # USB가 끊겼을 때
                 self.reconnect()
             while self.alive and self.serial and self.serial.is_open: # 무한 루프 for 시리얼 읽기
