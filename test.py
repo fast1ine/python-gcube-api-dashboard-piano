@@ -90,6 +90,9 @@ class ProcessProtocol():
     def __init__(self, buffer):
         pass
 
+    def process_data(self, buffer):
+        pass
+
 class PingpongThread():
     is_instance = False
     is_start = False
@@ -98,7 +101,7 @@ class PingpongThread():
             print("PingpongThread instance cannot be constructed above 1.")
             print("Exit program.")
             sys.exit()
-        self.PORT = Utils().findBluetoothUSB()
+        self.PORT = Utils().findBluetoothDongle()
         PingpongThread.is_instance = True
 
     def __del__(self):
@@ -133,20 +136,22 @@ class PingpongThread():
             if ser:
                 break
             else:
-                print("Connection Error. Please conncect the Bluetooth USB.")
+                print("Connection Error. Please connect the Bluetooth USB again, or shut down other port connected program.")
                 print("Sleep 3 seconds.")
                 time.sleep(3)
 
-        self.serial_input = Utils().serial_input
+        self.serial_input = Utils().PingPongG2_connect_bytes
         ReaderThreadInstance = ReaderThread(ser, rawProtocol)
         ReaderThreadInstance.write(self.serial_input)
         return ReaderThreadInstance
 
+
 PingpongThreadInstance = PingpongThread(2)
 PingpongThreadInstance.start()
 
-#adsfasdf
-#time.sleep(5)
+time.sleep(2)
+
+#PingpongThreadInstance.start()
 #pingpongThreadInstance.end()
 
 #pingpongThreadInstance = pingpongThread(2)

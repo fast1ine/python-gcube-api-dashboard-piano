@@ -134,10 +134,10 @@ class ReaderThread(threading.Thread):
     def reconnect(self):
         #print("reconnect")
         try:
-            PORT = Utils().findBluetoothUSB()
+            PORT = Utils().findBluetoothDongle()
             self.serial = Utils().connectSerialURL(PORT)
             # Callback 처리
-            self.write(Utils().serial_input) # 땜빵
+            self.write(Utils().PingPongG2_connect_bytes) # 땜빵
             self.alive = True
         except Exception as error:
             self.protocol.connection_lost(error)
