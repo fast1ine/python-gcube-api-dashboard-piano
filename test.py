@@ -77,59 +77,67 @@ class PingpongThread():
     is_instance = False
     is_start = False
     def __init__(self, number):
-        if PingpongThread.is_instance:
-            print("PingpongThread instance cannot be constructed above 1.")
-            print("Exit program.")
-            sys.exit()
-        self.PORT = Utils().findBluetoothDongle()
-        PingpongThread.is_instance = True
+        if not PingpongThread.is_instance:
+            self.PORT = Utils().findBluetoothDongle()
+            PingpongThread.is_instance = True
+        else:
+            raise ValueError("PingpongThread instance cannot be constructed above 1.")
 
     def __del__(self):
-        self.end()
+        try:
+            self.ReaderThreadInstance.close()
+            print("End thread.")
+        except:
+            pass
 
     # 쓰레드 시작
     def start(self):
-        if PingpongThread.is_start:
-            print("PingpongThread instance cannot start above 1.")
-            print("Exit program.")
-            sys.exit()
-        self.connectRobotThread_instance = self.connectRobotThread(self.PORT, 2)
-        self.connectRobotThread_instance.start()
-        PingpongThread.is_start = True
-    
+        if not PingpongThread.is_start and PingpongThread.is_instance:
+            self._connectRobotThread(self.PORT, 2)
+            self.ReaderThreadInstance.start()
+            PingpongThread.is_start = True
+        elif PingpongThread.is_start:
+            raise ValueError("PingpongThread instance cannot start above 1.")
+        elif not PingpongThread.is_instance:
+            raise ValueError("No instance of PingpongThread! Please construct instance first.")
+            
     # 쓰레드 종료
     def end(self):
-        if self.connectRobotThread_instance:
-            self.connectRobotThread_instance.close()
+        if PingpongThread.is_start:
+            self.ReaderThreadInstance.close()
             print("End thread.")
-            self.connectRobotThread_instance = None
+            self.ReaderThreadInstance = None
+            PingpongThread.is_instance = False
+            PingpongThread.is_start = False
         else:
-            print("No instance of connectRobotThread! Please start() before end the thread.")
-        PingpongThread.is_instance = False
-        PingpongThread.is_start = False
-
+            raise ValueError("Thread did not start! Please start() before end the thread.")
+        
     # 로봇 연결
-    def connectRobotThread(self, port, number):
-        ser = None
-        while True:
-            ser = Utils().connectSerialURL(self.PORT)
-            if ser:
-                break
-            else:
-                print("Connection Error. Please connect the Bluetooth USB, or shut down other port connected program.")
-                print("Sleep 3 seconds.")
-                time.sleep(3)
+    def _connectRobotThread(self, port, number):
+        if PingpongThread.is_instance:
+            ser = None
+            while True:
+                ser = Utils().connectSerialURL(self.PORT)
+                if ser:
+                    break
+                else:
+                    print("Connection Error. Please connect the Bluetooth USB, or shut down other port connected program.")
+                    print("Sleep 3 seconds.")
+                    time.sleep(3)
+            self.ReaderThreadInstance = ReaderThread(ser, rawProtocol)
+            self.ReaderThreadInstance.write(Utils().PingPongG2_connect_bytes)
+        else:
+            raise ValueError("No instance of PingpongThread! Please construct instance first.")
 
-        self.serial_input = Utils().PingPongG2_connect_bytes
-        ReaderThreadInstance = ReaderThread(ser, rawProtocol)
-        ReaderThreadInstance.write(self.serial_input)
-        return ReaderThreadInstance
+    def disconnectMasterRobot(self):
+        if PingpongThread.is_start:
+            self.ReaderThreadInstance.write(Utils().PingPong_disconnect_bytes)
+        else:
+            print("PingpongThread is not started. Cannot operate the function.")
 
 
 PingpongThreadInstance = PingpongThread(2)
 PingpongThreadInstance.start()
-
-time.sleep(2)
 
 #PingpongThreadInstance.start()
 #pingpongThreadInstance.end()

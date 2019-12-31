@@ -5,6 +5,10 @@ class Utils():
     PingPongDongle_connect_hexlist = [0xDD, 0xDD, 0xDD, 0xDD, 0x00, 0x01, 0xDA, 0x00, 0x0B, 0x00, 0x0D]
     PingPongDongle_connect_bytes = serial.to_bytes(PingPongDongle_connect_hexlist)
 
+    #FF FF FF FF 00 00 A8 00 0A 01
+    PingPong_disconnect_hexlist = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xA8, 0x00, 0x0A, 0x01]
+    PingPong_disconnect_bytes = serial.to_bytes(PingPong_disconnect_hexlist)
+
     #FF FF 00 FF 20 00 AD 00 0B 0A 00
     PingPongG2_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00]
     PingPongG2_connect_bytes = serial.to_bytes(PingPongG2_connect_hexlist)
