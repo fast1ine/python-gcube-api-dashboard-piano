@@ -1,0 +1,16 @@
+[255, 255, 255, 255, 0, 0, 168, 0, 10, 1]
+
+
+def insert_str(string, str_to_insert, index):
+    return string[:index] + str_to_insert + string[index:]
+
+# hex into spaced & upper string
+def bytes_to_hex_str(bytesinput):
+    stroutput = bytesinput.hex()
+    for i in range(int(len(str(bytesinput.hex()))/2-1)):
+        stroutput = insert_str(stroutput, " ", 3*i+2)
+    stroutput = stroutput.upper()
+    return stroutput
+
+
+FF FF FF FF 00 00 A8 00 0A 01

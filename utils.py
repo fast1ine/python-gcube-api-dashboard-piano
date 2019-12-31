@@ -1,9 +1,11 @@
 import serial.tools.list_ports
 
 class Utils():
+    #DD DD DD DD 00 01 DA 00 0B 00 0D
     PingPongDongle_connect_hexlist = [0xDD, 0xDD, 0xDD, 0xDD, 0x00, 0x01, 0xDA, 0x00, 0x0B, 0x00, 0x0D]
     PingPongDongle_connect_bytes = serial.to_bytes(PingPongDongle_connect_hexlist)
 
+    #FF FF 00 FF 20 00 AD 00 0B 0A 00
     PingPongG2_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00]
     PingPongG2_connect_bytes = serial.to_bytes(PingPongG2_connect_hexlist)
 
@@ -29,22 +31,28 @@ class Utils():
             for i in range(port_len):
                 p = ports[i]
                 try:
-                    ser = serial.serial_for_url(str(p.device), baudrate=115200, timeout=1, write_timeout=0.5) # ?????????????
+                    ser = serial.serial_for_url(str(p.device), baudrate=9600, timeout=0, write_timeout=0.5) # 9600으로 한 번 보내기
                     ser.write(self.PingPongDongle_connect_bytes)
-                    print("abdc") 
+                    ser.close()
+                    ser = serial.serial_for_url(str(p.device), baudrate=115200, timeout=2, write_timeout=0.5)
+                    ser.write(self.PingPongDongle_connect_bytes)
                     data = ser.read(11)
-                    print(data)
+                    #print(data)
+                    ser.close()
                     if data == self.PingPongDongle_connect_bytes:
-                        ser.close()
                         print("Found device: " + str(p.description))
                         PORT = str(p.device)
                         return PORT
+                    elif data == b"":
+                        print("PingPongDongle_connect_bytes timeout.")
+                    else:
+                        print("What device is this?")
                 except:
                     try:
                         ser.close()
                     except:
                         pass
-                    print("something wrong")
+                    #print("something wrong")
 
             if not_found_flag == False:
                 print("Device not found. Please connect the BluetoothUSB, or shut down other port connected program.")

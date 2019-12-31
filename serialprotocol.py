@@ -99,7 +99,6 @@ class ReaderThread(threading.Thread):
                             break
             self.alive = False
             self.protocol.connection_lost(error)
-        #print("join")
 
     def write(self, data):
         """Thread safe writing (uses lock)"""

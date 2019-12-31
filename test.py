@@ -3,15 +3,17 @@
 
 from serialprotocol import Protocol, ReaderThread
 from utils import Utils
+from processprotocol import ProcessProtocol
 import sys
 import time
 import serial
 
 # 프로토콜
-class rawProtocol(Protocol):
+class rawProtocol(Protocol, ProcessProtocol):
     def __init__(self):
         self.init_buffer()
         self.set_timeout()
+        self.is_robot_connect = False
 
     # 버퍼 초기화
     def init_buffer(self):
@@ -56,22 +58,7 @@ class rawProtocol(Protocol):
         
         if len(self.buffer) == self.buffer_size: # 버퍼 얻음
             print("Buffer:", Utils().bytes_to_hex_str(self.buffer))  
-            if self.buffer_size == 11: # master 로봇
-                if self.buffer[6] == int(0xAD):
-                    print("Connected with a master robot.") # 로봇 연결
-                elif self.buffer[9] == int(0xC0):
-                    print("Disconnected with a master robot. Sleep 2 seconds") # 로봇 연결 해제    
-                    self.transport.serial.close() # 시리얼 닫음
-                    time.sleep(2) # sleep 2 seconds
-                    self.transport.reconnect() # 재연결
-            elif self.buffer_size == 18: # slave 로봇
-                if self.buffer[6] == int(0xAD) and self.buffer[10] == 0:
-                    for i in range(8):
-                        if self.buffer[10+i] == 15:
-                            print("Connected robots:", i) # (i-1)대 slave 로봇 연결
-                            break
-                        if i == 7:
-                            print("Connected robots: 8")# 7대 slave 로봇 연결
+            self.is_robot_connect = self.process_data(self.buffer, self.buffer_size, self.transport, self.is_robot_connect) # 데이터 처리 및 명령
             self.init_buffer() # 버퍼 초기화
             
     # 데이터 보낼 때 함수
@@ -85,13 +72,6 @@ class rawProtocol(Protocol):
     # 종료 체크
     def isDone(self):
         return self.running
-
-class ProcessProtocol():
-    def __init__(self, buffer):
-        pass
-
-    def process_data(self, buffer):
-        pass
 
 class PingpongThread():
     is_instance = False
@@ -136,7 +116,7 @@ class PingpongThread():
             if ser:
                 break
             else:
-                print("Connection Error. Please connect the Bluetooth USB again, or shut down other port connected program.")
+                print("Connection Error. Please connect the Bluetooth USB, or shut down other port connected program.")
                 print("Sleep 3 seconds.")
                 time.sleep(3)
 
