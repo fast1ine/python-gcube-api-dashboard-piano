@@ -1,85 +1,21 @@
 # Environment: Windows x64, Python x64 3.6.6
 # pyserial==3.4
 
-from serialprotocol import Protocol, ReaderThread
+from serialprotocol import ReaderThread
 from utils import Utils
-from processprotocol import ProcessProtocol
+from rawprotocol import rawProtocol
 import sys
 import time
 import serial
 
-# 프로토콜
-class rawProtocol(Protocol, ProcessProtocol):
-    def __init__(self):
-        self.init_buffer()
-        self.set_timeout()
-        self.is_robot_connect = False
-
-    # 버퍼 초기화
-    def init_buffer(self):
-        self.buffer = b""
-        self.buffer_size = 8096
-    
-    # 타임아웃 시간 정하기
-    def set_timeout(self, sec=1):
-        self.timeout = sec
-            
-    # 연결 시작시 발생
-    def connection_made(self, transport):
-        self.transport = transport
-        self.running = True
-        print("Serial connected.")
-
-    # 연결 종료시 발생
-    def connection_lost(self, exc):
-        try:
-            self.transport.serial.close() # serial 연결 종료
-        except:
-            pass
-        print("Serial disconnected. Sleep 3 seconds.")
-        time.sleep(3)
-
-    #데이터가 들어오면 이곳에서 처리함.
-    def data_received(self, data):
-        if self.buffer == b"":
-            self.previous_time = time.time()
-        else:
-            if time.time()-self.previous_time > self.timeout: # 타임아웃
-                print("p",self.previous_time)
-                print("t",time.time())
-                self.init_buffer()
-                print("Timeout. Initialize buffer.")
-
-        self.buffer += data
-        if len(self.buffer) == 9 and self.buffer[7] == 0: # 버퍼 사이즈 계산
-            self.buffer_size = self.buffer[8]
-        elif len(self.buffer) == 9 and self.buffer[7] != 0:
-            print("Error. buffer[7]:", self.buffer[7])
-        
-        if len(self.buffer) == self.buffer_size: # 버퍼 얻음
-            print("Buffer:", Utils().bytes_to_hex_str(self.buffer))  
-            self.is_robot_connect = self.process_data(self.buffer, self.buffer_size, self.transport, self.is_robot_connect) # 데이터 처리 및 명령
-            self.init_buffer() # 버퍼 초기화
-            
-    # 데이터 보낼 때 함수
-    def write(self, data):
-        if self.running:
-            self.transport.write(data)
-            #print("Write data:", Utils().bytes_to_hex_str(data))
-        else:
-            print("Not running.")
-        
-    # 종료 체크
-    def isDone(self):
-        return self.running
-
-class PingpongThread():
+class PingPongThread():
     is_instance = False
     is_start = False
-    def __init__(self, number):
-        if not PingpongThread.is_instance:
-            self.PORT = Utils().findBluetoothDongle()
-            PingpongThread.is_instance = True
+    def __init__(self, number=2):
+        if not PingPongThread.is_instance:
+            self.connection_number = number # 연결할 로봇 대수
+            PingPongThread.is_instance = True
+            self.PORT = Utils().find_bluetooth_dongle()
         else:
             raise ValueError("PingpongThread instance cannot be constructed above 1.")
 
@@ -92,62 +28,81 @@ class PingpongThread():
 
     # 쓰레드 시작
     def start(self):
-        if not PingpongThread.is_start and PingpongThread.is_instance:
-            self._connectRobotThread(self.PORT, 2)
+        if not PingPongThread.is_start and PingPongThread.is_instance:
+            PingPongThread.is_start = True
+            self._connect_robot_thread(self.PORT)
             self.ReaderThreadInstance.start()
-            PingpongThread.is_start = True
-        elif PingpongThread.is_start:
-            raise ValueError("PingpongThread instance cannot start above 1.")
-        elif not PingpongThread.is_instance:
-            raise ValueError("No instance of PingpongThread! Please construct instance first.")
+        elif PingPongThread.is_start:
+            raise ValueError("PingPongThread instance cannot start above 1.")
+        elif not PingPongThread.is_instance:
+            #raise ValueError("No instance of PingpongThread! Please construct instance first.")
+            # cannot reach
+            print("?")
+            pass
             
     # 쓰레드 종료
     def end(self):
-        if PingpongThread.is_start:
+        if PingPongThread.is_start:
             self.ReaderThreadInstance.close()
             print("End thread.")
             self.ReaderThreadInstance = None
-            PingpongThread.is_instance = False
-            PingpongThread.is_start = False
+            PingPongThread.is_instance = False
+            PingPongThread.is_start = False
         else:
             raise ValueError("Thread did not start! Please start() before end the thread.")
         
+    # 로봇 연결 체크
+    def is_robot_connect(self):
+        return self.ReaderThreadInstance.is_robot_connect()
+
+    # 로봇 연결 대수 체크
+    def get_connected_robots_number(self):
+        return self.ReaderThreadInstance.get_connected_robots_number()
+
     # 로봇 연결
-    def _connectRobotThread(self, port, number):
-        if PingpongThread.is_instance:
+    def _connect_robot_thread(self, port):
+        if PingPongThread.is_instance:
             ser = None
             while True:
-                ser = Utils().connectSerialURL(self.PORT)
+                ser = Utils().connect_serial_URL(self.PORT)
                 if ser:
                     break
                 else:
-                    print("Connection Error. Please connect the Bluetooth USB, or shut down other port connected program.")
-                    print("Sleep 3 seconds.")
-                    time.sleep(3)
+                    self.PORT = Utils().find_bluetooth_dongle()
             self.ReaderThreadInstance = ReaderThread(ser, rawProtocol)
-            self.ReaderThreadInstance.write(Utils().PingPongG2_connect_bytes)
+            self.ReaderThreadInstance.connection_number = self.connection_number
+            self.ReaderThreadInstance.write(Utils().PingPongGn_connect_bytes(self.connection_number))
         else:
-            raise ValueError("No instance of PingpongThread! Please construct instance first.")
-
+            #raise ValueError("No instance of PingpongThread! Please construct instance first.")
+            # cannot reach
+            print("?")
+            pass
+    
+    # 로봇 연결 해제
     def disconnectMasterRobot(self):
-        if PingpongThread.is_start:
+        if PingPongThread.is_start and self.is_robot_connect():
             self.ReaderThreadInstance.write(Utils().PingPong_disconnect_bytes)
+            print("Disconnect master robot.")
         else:
-            print("PingpongThread is not started. Cannot operate the function.")
+            raise ValueError("PingpongThread is not started. Cannot operate the function.")
 
 
-PingpongThreadInstance = PingpongThread(2)
-PingpongThreadInstance.start()
+PingPongThreadInstance = PingPongThread()
+PingPongThreadInstance.start()
 
 #PingpongThreadInstance.start()
-#pingpongThreadInstance.end()
+
+#PingpongThreadInstance.end()
+#PingpongThreadInstance.end()
 
 #pingpongThreadInstance = pingpongThread(2)
 #pingpongThreadInstance.start()
 
 while True:
     #print("Thread working... (5 sec.)")
-    time.sleep(5)
+    time.sleep(10)
+    #PingpongThreadInstance.disconnectMasterRobot()
+
 
 
 

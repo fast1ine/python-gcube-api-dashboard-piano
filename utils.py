@@ -9,9 +9,15 @@ class Utils():
     PingPong_disconnect_hexlist = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xA8, 0x00, 0x0A, 0x01]
     PingPong_disconnect_bytes = serial.to_bytes(PingPong_disconnect_hexlist)
 
-    #FF FF 00 FF 20 00 AD 00 0B 0A 00
-    PingPongG2_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00]
-    PingPongG2_connect_bytes = serial.to_bytes(PingPongG2_connect_hexlist)
+    def PingPongGn_connect_bytes(self, number):
+        if number > 8:
+            raise ValueError("PingPong cannot connect above 8 robots!")
+
+        #FF FF 00 FF 20 00 AD 00 0B 0A 00
+        PingPongGn_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00] # 2개 이상
+        PingPongGn_connect_hexlist[4] = number
+        PingPongGn_connect_bytes = serial.to_bytes(PingPongGn_connect_hexlist)
+        return PingPongGn_connect_bytes
 
     # insert bewtween string
     def insert_str(self, string, str_to_insert, index):
@@ -26,7 +32,7 @@ class Utils():
         return stroutput
 
     # 포트 찾기
-    def findBluetoothDongle(self):
+    def find_bluetooth_dongle(self):
         not_found_flag = False
         PORT = ""
         while not PORT:
@@ -35,7 +41,8 @@ class Utils():
             for i in range(port_len):
                 p = ports[i]
                 try:
-                    ser = serial.serial_for_url(str(p.device), baudrate=9600, timeout=0, write_timeout=0.5) # 9600으로 한 번 보내기
+                    # 9600으로 한 번 보내기 (이전에 연결 했었다가 다시 115200으로 PingPongDongle_connect_bytes를 보내면 응답을 안 받음.)
+                    ser = serial.serial_for_url(str(p.device), baudrate=9600, timeout=0, write_timeout=0.5) 
                     ser.write(self.PingPongDongle_connect_bytes)
                     ser.close()
                     ser = serial.serial_for_url(str(p.device), baudrate=115200, timeout=2, write_timeout=0.5)
@@ -48,7 +55,9 @@ class Utils():
                         PORT = str(p.device)
                         return PORT
                     elif data == b"":
-                        print("PingPongDongle_connect_bytes timeout.")
+                        print("PingPongDongle_connect_bytes timeout. (2 secs.)")
+                        print('data = b""')
+                        pass
                     else:
                         print("What device is this?")
                 except:
@@ -62,7 +71,7 @@ class Utils():
                 print("Device not found. Please connect the BluetoothUSB, or shut down other port connected program.")
                 not_found_flag = True
 
-    def connectSerialURL(self, port):
+    def connect_serial_URL(self, port):
         try:
             ser = serial.serial_for_url(port, baudrate=115200, timeout=None) # baurate 9600 does not work.
             return ser

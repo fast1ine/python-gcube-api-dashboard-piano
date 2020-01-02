@@ -48,6 +48,7 @@ class ReaderThread(threading.Thread):
         self._connection_made = threading.Event()
         self.protocol = None
         self.end_flag = False
+        self.connection_number = 0
 
     def stop(self):
         """Stop the reader thread"""
@@ -133,13 +134,19 @@ class ReaderThread(threading.Thread):
     def reconnect(self):
         #print("reconnect")
         try:
-            PORT = Utils().findBluetoothDongle()
-            self.serial = Utils().connectSerialURL(PORT)
+            PORT = Utils().find_bluetooth_dongle()
+            self.serial = Utils().connect_serial_URL(PORT)
             # Callback 처리
-            self.write(Utils().PingPongG2_connect_bytes) # 땜빵
+            self.write(Utils().PingPongGn_connect_bytes(2)) # 땜빵
             self.alive = True
         except Exception as error:
             self.protocol.connection_lost(error)
+
+    def is_robot_connect(self):
+        return self.protocol.is_robot_connect
+
+    def get_connected_robots_number(self):
+        return self.protocol.connected_robots_number
 
     def __enter__(self):
         """\
