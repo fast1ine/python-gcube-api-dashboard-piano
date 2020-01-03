@@ -17,7 +17,7 @@ class PingPongThread(GenerateProtocol):
             self.set_connection_number(number) # 연결할 로봇 대수
             PingPongThread.is_instance = True # 인스턴스 생성 확인
             super().__init__(self.connection_number) # generate protocol init
-            self.PORT = Utils().find_bluetooth_dongle(GenerateProtocol.PingPongDongle_connect_bytes) # 동글 포트 찾기
+            self.PORT = Utils().find_bluetooth_dongle(GenerateProtocol.DongleInAction_bytes) # 동글 포트 찾기
         else:
             raise ValueError("PingpongThread instance cannot be constructed above 1.")
 
@@ -65,7 +65,7 @@ class PingPongThread(GenerateProtocol):
                 if ser:
                     break
                 else:
-                    self.PORT = Utils().find_bluetooth_dongle(super().PingPongDongle_connect_bytes)
+                    self.PORT = Utils().find_bluetooth_dongle(super().DongleInAction_bytes)
             self.ReaderThreadInstance = ReaderThread(ser, rawProtocol)
             self.ReaderThreadInstance.connection_number = self.connection_number
             self.ReaderThreadInstance.write(super().PingPongGn_connect_bytes(self.connection_number))
@@ -124,7 +124,7 @@ class PingPongThread(GenerateProtocol):
             raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
 
     def run_motor(self, cube_ID, speed) -> None:
-        self._write(super().PingPong_stepper_bytes(cube_ID, speed))
+        self._write(super().SetContinuousSteps_bytes(cube_ID, speed))
 
 
 

@@ -4,7 +4,7 @@ from utils import Utils
 class GenerateProtocol():
     #DD DD DD DD 00 01 DA 00 0B 00 0D
     PingPongDongle_connect_hexlist = [0xDD, 0xDD, 0xDD, 0xDD, 0x00, 0x01, 0xDA, 0x00, 0x0B, 0x00, 0x0D]
-    PingPongDongle_connect_bytes = serial.to_bytes(PingPongDongle_connect_hexlist)
+    DongleInAction_bytes = serial.to_bytes(PingPongDongle_connect_hexlist)
 
     #FF FF FF FF 00 00 A8 00 0A 01
     PingPong_disconnect_hexlist = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xA8, 0x00, 0x0A, 0x01]
@@ -28,9 +28,10 @@ class GenerateProtocol():
         PingPongGn_connect_hexlist[4] = number # connection number
         return serial.to_bytes(PingPongGn_connect_hexlist)
     
-    # FF FF FF 01 00 01 CC 00 0F 01 00 00 02 11 11
-    def PingPong_stepper_bytes(self, cube_ID, speed) -> bytes:
-        PingPong_stepper_hexlist = [0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x01, 0xCC, 0x00, 0x0F, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00]
+    def SetContinuousSteps_bytes(self, cube_ID, speed) -> bytes:
+        """continuous step motor run"""
+        # FF FF FF 01 20 00 CC 00 0F 01 00 00 02 11 11
+        PingPong_stepper_hexlist = [0xFF, 0xFF, 0xFF, 0x01, 0x10, 0x00, 0xCC, 0x00, 0x0F, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00]
         
         if str(cube_ID).lower() == 'all':
             cube_ID = 0xFF
@@ -39,9 +40,9 @@ class GenerateProtocol():
         PingPong_stepper_hexlist[3] = cube_ID # set cube ID (1 to 8)
         
         Utils().integer_check(self.connection_number)
-        PingPong_stepper_hexlist[5] = self.connection_number # set connection number
+        PingPong_stepper_hexlist[4] = self.connection_number*16 # set connection number
 
-        #PingPong_stepper_hexlist[9] ?
+        #PingPong_stepper_hexlist[9] 
 
         Utils().float_check(speed)
         speed = float(speed)
@@ -52,5 +53,13 @@ class GenerateProtocol():
 
         converted_speed = [int(speed), int(speed)] # need to convert differently
         PingPong_stepper_hexlist[13:15] = converted_speed
+        return serial.to_bytes(PingPong_stepper_hexlist)
+
+    def SetAggregateSteps_bytes(self, cube_ID, speed) -> bytes:
+        """step motor command to master robot"""
+        # AA AA 00 AA 10 00 CD ~
+        PingPong_stepper_hexlist = []
+        
+        
         return serial.to_bytes(PingPong_stepper_hexlist)
 
