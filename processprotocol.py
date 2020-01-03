@@ -4,7 +4,7 @@ class ProcessProtocol():
     def __init__(self):
         pass
 
-    def process_data(self, buffer, buffer_size, transport, is_robot_connect, connected_robots_number):
+    def process_data(self, buffer, buffer_size, transport, is_robot_connect, connected_robots_number) -> (bool, int):
         """return: robot connection, connected robots number"""
         self.buffer = buffer
         self.buffer_size = buffer_size
@@ -19,12 +19,12 @@ class ProcessProtocol():
         else:
             return self._unregistered()
 
-    def _unregistered(self):
+    def _unregistered(self) -> (bool, int):
         #print("buffer_size:", self.buffer_size)
         #print("Operation is not registered.")
         return self.is_robot_connect, self.connected_robots_number
 
-    def _master_robot(self): # master 로봇
+    def _master_robot(self) -> (bool, int): # master 로봇
         if self.buffer[6] == int(0xAD):
             print("Connected with a master robot.") # 로봇 연결
             return True, 1
@@ -40,7 +40,7 @@ class ProcessProtocol():
         else:
             return self._unregistered()
     
-    def _slave_robot(self): # slave 로봇
+    def _slave_robot(self) -> (bool, int): # slave 로봇
         if self.buffer[6] == int(0xAD) and self.buffer[10] == int(0x00):
             for i in range(8):
                 if self.buffer[10+i] == 15:

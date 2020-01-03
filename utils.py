@@ -9,9 +9,12 @@ class Utils():
     PingPong_disconnect_hexlist = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xA8, 0x00, 0x0A, 0x01]
     PingPong_disconnect_bytes = serial.to_bytes(PingPong_disconnect_hexlist)
 
-    def PingPongGn_connect_bytes(self, number):
-        if number > 8:
-            raise ValueError("PingPong cannot connect above 8 robots!")
+    def PingPongGn_connect_bytes(self, number) -> bytes:
+        if number == 1: # 1개
+            #DD DD 00 00 00 00 DA 00 0B 00 00
+            PingPongG1_connect_hexlist = [0xDD, 0xDD, 0x00, 0x00, 0x00, 0x00, 0xDA, 0x00, 0x0B, 0x00, 0x00]
+            PingPongG1_connect_bytes = serial.to_bytes(PingPongG1_connect_hexlist)
+            return PingPongG1_connect_bytes
 
         #FF FF 00 FF 20 00 AD 00 0B 0A 00
         PingPongGn_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00] # 2개 이상
@@ -20,11 +23,11 @@ class Utils():
         return PingPongGn_connect_bytes
 
     # insert bewtween string
-    def insert_str(self, string, str_to_insert, index):
+    def insert_str(self, string, str_to_insert, index) -> str:
         return string[:index] + str_to_insert + string[index:]
 
     # hex into spaced & upper string
-    def bytes_to_hex_str(self, bytesinput):
+    def bytes_to_hex_str(self, bytesinput) -> str:
         stroutput = bytesinput.hex()
         for i in range(int(len(str(bytesinput.hex()))/2-1)):
             stroutput = self.insert_str(stroutput, " ", 3*i+2)
@@ -32,7 +35,7 @@ class Utils():
         return stroutput
 
     # 포트 찾기
-    def find_bluetooth_dongle(self):
+    def find_bluetooth_dongle(self) -> str:
         not_found_flag = False
         PORT = ""
         while not PORT:
@@ -71,7 +74,7 @@ class Utils():
                 print("Device not found. Please connect the BluetoothUSB, or shut down other port connected program.")
                 not_found_flag = True
 
-    def connect_serial_URL(self, port):
+    def connect_serial_URL(self, port) -> serial:
         try:
             ser = serial.serial_for_url(port, baudrate=115200, timeout=None) # baurate 9600 does not work.
             return ser

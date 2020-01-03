@@ -12,22 +12,22 @@ class rawProtocol(Protocol, ProcessProtocol):
         self.connected_robots_number = 0 # 연결된 로봇 개수
 
     # 버퍼 초기화
-    def init_buffer(self):
+    def init_buffer(self) -> None:
         self.buffer = b""
         self.buffer_size = 8096
     
     # 타임아웃 시간 정하기
-    def set_timeout(self, sec=1):
+    def set_timeout(self, sec=1) -> None:
         self.timeout = sec
-            
+
     # 연결 시작시 발생
-    def connection_made(self, transport):
+    def connection_made(self, transport) -> None:
         self.transport = transport
         self.running = True
         print("Serial connected.")
 
     # 연결 종료시 발생
-    def connection_lost(self, exc):
+    def connection_lost(self, exc) -> None:
         try:
             self.transport.serial.close() # serial 연결 종료
         except:
@@ -36,7 +36,7 @@ class rawProtocol(Protocol, ProcessProtocol):
         time.sleep(3)
 
     #데이터가 들어오면 이곳에서 처리함.
-    def data_received(self, data):
+    def data_received(self, data) -> None:
         if self.buffer == b"":
             self.previous_time = time.time()
         else:
@@ -66,7 +66,7 @@ class rawProtocol(Protocol, ProcessProtocol):
                 print("Fully connected.")
             
     # 데이터 보낼 때 함수
-    def write(self, data):
+    def write(self, data) -> None:
         if self.running:
             self.transport.write(data)
             #print("Write data:", Utils().bytes_to_hex_str(data))
@@ -74,5 +74,5 @@ class rawProtocol(Protocol, ProcessProtocol):
             print("Not running.")
         
     # 종료 체크
-    def is_done(self):
+    def is_done(self) -> bool:
         return self.running

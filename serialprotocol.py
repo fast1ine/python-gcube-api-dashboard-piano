@@ -11,13 +11,13 @@ class Protocol(metaclass=ABCMeta): # metaclass
     implementations of all methods.
     """
 
-    def connection_made(self, transport):
+    def connection_made(self, transport) -> None:
         """Called when reader thread is started"""
 
-    def data_received(self, data):
+    def data_received(self, data) -> None:
         """Called with snippets received from the serial port"""
 
-    def connection_lost(self, exc):
+    def connection_lost(self, exc) -> None:
         """\
         Called when the serial port is closed or the reader loop terminated
         otherwise.
@@ -50,7 +50,7 @@ class ReaderThread(threading.Thread):
         self.end_flag = False
         self.connection_number = 0
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the reader thread"""
         self.alive = False
         try:
@@ -60,7 +60,7 @@ class ReaderThread(threading.Thread):
             pass
         self.join(2)
     
-    def run(self):
+    def run(self) -> None:
         """Reader loop"""
         if not hasattr(self.serial, 'cancel_read'):
             self.serial.timeout = 1
@@ -101,13 +101,13 @@ class ReaderThread(threading.Thread):
             self.alive = False
             self.protocol.connection_lost(error)
 
-    def write(self, data):
+    def write(self, data) -> None:
         """Thread safe writing (uses lock)"""
         with self._lock:
             print("Write data:", Utils().bytes_to_hex_str(data))
             self.serial.write(data)
 
-    def close(self):
+    def close(self) -> None:
         """Close the serial port and exit reader thread (uses lock)"""
         # use the lock to let other threads finish writing
         with self._lock:
@@ -116,7 +116,7 @@ class ReaderThread(threading.Thread):
             self.stop()
             self.serial.close()
             
-    def connect(self):
+    def connect(self) -> None:
         """
         Wait until connection is set up and return the transport and protocol
         instances.
@@ -131,7 +131,7 @@ class ReaderThread(threading.Thread):
 
     # - -  context manager, returns protocol
 
-    def reconnect(self):
+    def reconnect(self) -> None:
         #print("reconnect")
         try:
             PORT = Utils().find_bluetooth_dongle()
@@ -142,13 +142,13 @@ class ReaderThread(threading.Thread):
         except Exception as error:
             self.protocol.connection_lost(error)
 
-    def is_robot_connect(self):
+    def is_robot_connect(self) -> bool:
         return self.protocol.is_robot_connect
 
-    def get_connected_robots_number(self):
+    def get_connected_robots_number(self) -> int:
         return self.protocol.connected_robots_number
 
-    def __enter__(self):
+    def __enter__(self) -> Protocol:
         """\
         Enter context handler. May raise RuntimeError in case the connection
         could not be created.
