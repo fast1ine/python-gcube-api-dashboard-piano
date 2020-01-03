@@ -11,7 +11,7 @@ import serial
 class PingPongThread():
     is_instance = False
     is_start = False
-    def __init__(self, number=2):
+    def __init__(self, number=1):
         if not PingPongThread.is_instance:
             self.connection_number = number # 연결할 로봇 대수
             PingPongThread.is_instance = True
