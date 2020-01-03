@@ -4,6 +4,7 @@ import serial
 import threading
 import time
 from utils import Utils
+from generateprotocol import GenerateProtocol
 
 class Protocol(metaclass=ABCMeta): # metaclass
     """\
@@ -134,10 +135,9 @@ class ReaderThread(threading.Thread):
     def reconnect(self) -> None:
         #print("reconnect")
         try:
-            PORT = Utils().find_bluetooth_dongle()
+            PORT = Utils().find_bluetooth_dongle(GenerateProtocol.PingPongDongle_connect_bytes)
             self.serial = Utils().connect_serial_URL(PORT)
-            # Callback 처리
-            self.write(Utils().PingPongGn_connect_bytes(2)) # 땜빵
+            self.write(GenerateProtocol().PingPongGn_connect_bytes(self.connection_number))
             self.alive = True
         except Exception as error:
             self.protocol.connection_lost(error)

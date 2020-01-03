@@ -60,16 +60,16 @@ class rawProtocol(Protocol, ProcessProtocol):
             print("Buffer:", Utils().bytes_to_hex_str(self.buffer))  
             self.is_robot_connect, self.connected_robots_number = \
                 self.process_data(self.buffer, 
-                    self.buffer_size, 
-                    self.transport, 
-                    self.is_robot_connect, 
-                    self.connected_robots_number,
-                    self.transport.connection_number) # 데이터 처리 및 명령
+                                  self.buffer_size, 
+                                  self.transport, 
+                                  self.is_robot_connect, 
+                                  self.connected_robots_number,
+                                  self.transport.connection_number) # 데이터 처리 및 명령
             self.init_buffer() # 버퍼 초기화
 
             if not self.is_full_connect and self.connected_robots_number == self.transport.connection_number:
                 self.is_full_connect = True
-                print("Fully connected.")
+                print("Fully connected.") # 모두 연결
             elif self.connected_robots_number != self.transport.connection_number:
                 self.is_full_connect = False
 

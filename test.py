@@ -4,18 +4,19 @@
 from serialprotocol import ReaderThread
 from utils import Utils
 from rawprotocol import rawProtocol
+from generateprotocol import GenerateProtocol
 import sys
 import time
 import serial
 
-class PingPongThread():
+class PingPongThread(GenerateProtocol):
     is_instance = False
     is_start = False
     def __init__(self, number=1):
         if not PingPongThread.is_instance:
-            self.connection_number = number # 연결할 로봇 대수
+            self.set_connection_number(number) # 연결할 로봇 대수
             PingPongThread.is_instance = True
-            self.PORT = Utils().find_bluetooth_dongle()
+            self.PORT = Utils().find_bluetooth_dongle(super().PingPongDongle_connect_bytes)
         else:
             raise ValueError("PingpongThread instance cannot be constructed above 1.")
 
@@ -59,6 +60,18 @@ class PingPongThread():
     def get_connected_robots_number(self) -> int:
         return self.ReaderThreadInstance.get_connected_robots_number()
 
+    # 연결 숫자
+    def set_connection_number(self, number):
+        Utils().integer_check(number)
+        if 1 <= number and number <= 8: # 1개 이상 8개 이하 
+            self.connection_number = number # 연결할 로봇 대수
+            try:
+                self.ReaderThreadInstance.connection_number = self.connection_number
+            except:
+                pass
+        else:
+            raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
+
     # 로봇 연결
     def _connect_robot_thread(self, port) -> None:
         if PingPongThread.is_instance:
@@ -68,10 +81,10 @@ class PingPongThread():
                 if ser:
                     break
                 else:
-                    self.PORT = Utils().find_bluetooth_dongle()
+                    self.PORT = Utils().find_bluetooth_dongle(super().PingPongDongle_connect_bytes)
             self.ReaderThreadInstance = ReaderThread(ser, rawProtocol)
             self.ReaderThreadInstance.connection_number = self.connection_number
-            self.ReaderThreadInstance.write(Utils().PingPongGn_connect_bytes(self.connection_number))
+            self.ReaderThreadInstance.write(super().PingPongGn_connect_bytes(self.connection_number))
         else:
             #raise ValueError("No instance of PingpongThread! Please construct instance first.")
             # cannot reach
@@ -87,7 +100,7 @@ class PingPongThread():
     # 로봇 연결 해제
     def disconnect_master_robot(self) -> None:
         if PingPongThread.is_start and self.is_robot_connect():
-            self.ReaderThreadInstance.write(Utils().PingPong_disconnect_bytes)
+            self.ReaderThreadInstance.write(super().PingPong_disconnect_bytes)
             print("Disconnect master robot.")
         else:
             raise ValueError("PingpongThread is not started. Cannot operate the function.")
@@ -95,7 +108,7 @@ class PingPongThread():
 
 
 def main():
-    PingPongThreadInstance = PingPongThread(2)
+    PingPongThreadInstance = PingPongThread()
     PingPongThreadInstance.start()
 
     #PingPongThreadInstance.start()
