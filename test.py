@@ -88,7 +88,7 @@ class PingPongThread():
 
 
 def main():
-    PingPongThreadInstance = PingPongThread()
+    PingPongThreadInstance = PingPongThread(2)
     PingPongThreadInstance.start()
 
     #PingPongThreadInstance.start()

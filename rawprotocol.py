@@ -10,6 +10,7 @@ class rawProtocol(Protocol, ProcessProtocol):
         self.set_timeout()
         self.is_robot_connect = False
         self.connected_robots_number = 0 # 연결된 로봇 개수
+        self.is_full_connect = False
 
     # 버퍼 초기화
     def init_buffer(self) -> None:
@@ -28,6 +29,9 @@ class rawProtocol(Protocol, ProcessProtocol):
 
     # 연결 종료시 발생
     def connection_lost(self, exc) -> None:
+        self.is_robot_connect = False
+        self.connected_robots_number = 0
+        self.is_full_connect = False
         try:
             self.transport.serial.close() # serial 연결 종료
         except:
@@ -59,12 +63,16 @@ class rawProtocol(Protocol, ProcessProtocol):
                     self.buffer_size, \
                     self.transport, \
                     self.is_robot_connect, \
-                    self.connected_robots_number) # 데이터 처리 및 명령
+                    self.connected_robots_number,
+                    self.transport.connection_number) # 데이터 처리 및 명령
             self.init_buffer() # 버퍼 초기화
 
-            if self.connected_robots_number == self.transport.connection_number:
+            if not self.is_full_connect and self.connected_robots_number == self.transport.connection_number:
+                self.is_full_connect = True
                 print("Fully connected.")
-            
+            elif self.connected_robots_number != self.transport.connection_number:
+                self.is_full_connect = False
+
     # 데이터 보낼 때 함수
     def write(self, data) -> None:
         if self.running:
