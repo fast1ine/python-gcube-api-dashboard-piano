@@ -19,7 +19,7 @@ class PingPongThread():
         else:
             raise ValueError("PingpongThread instance cannot be constructed above 1.")
 
-    def __del__(self):
+    def __del__(self) -> None:
         PingPongThread.is_instance = False
         try:
             self.ReaderThreadInstance.close()
@@ -77,7 +77,13 @@ class PingPongThread():
             # cannot reach
             print("?")
             pass
-    
+
+    def _write(self, protocol_bytes) -> None:
+        try:
+            self.ReaderThreadInstance.write(protocol_bytes)
+        except:
+            print("Cannot write.")
+            
     # 로봇 연결 해제
     def disconnect_master_robot(self) -> None:
         if PingPongThread.is_start and self.is_robot_connect():
@@ -85,6 +91,7 @@ class PingPongThread():
             print("Disconnect master robot.")
         else:
             raise ValueError("PingpongThread is not started. Cannot operate the function.")
+
 
 
 def main():

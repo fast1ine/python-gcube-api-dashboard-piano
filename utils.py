@@ -10,17 +10,74 @@ class Utils():
     PingPong_disconnect_bytes = serial.to_bytes(PingPong_disconnect_hexlist)
 
     def PingPongGn_connect_bytes(self, number) -> bytes:
+        self.integer_check(number)
+        if number < 0:
+            raise ValueError("Please enter non-negative number!")
+
         if number == 1: # 1개
             #DD DD 00 00 00 00 DA 00 0B 00 00
             PingPongG1_connect_hexlist = [0xDD, 0xDD, 0x00, 0x00, 0x00, 0x00, 0xDA, 0x00, 0x0B, 0x00, 0x00]
-            PingPongG1_connect_bytes = serial.to_bytes(PingPongG1_connect_hexlist)
-            return PingPongG1_connect_bytes
+            PingPongG1_connect_bytes_ = serial.to_bytes(PingPongG1_connect_hexlist)
+            return PingPongG1_connect_bytes_
 
         #FF FF 00 FF 20 00 AD 00 0B 0A 00
         PingPongGn_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00] # 2개 이상
-        PingPongGn_connect_hexlist[4] = number
-        PingPongGn_connect_bytes = serial.to_bytes(PingPongGn_connect_hexlist)
-        return PingPongGn_connect_bytes
+        PingPongGn_connect_hexlist[4] = number # connection number
+        PingPongGn_connect_bytes_ = serial.to_bytes(PingPongGn_connect_hexlist)
+        return PingPongGn_connect_bytes_
+    
+    # FF FF FF 01 00 01 CC 00 0F 01 00 00 02 11 11
+    def PingPong_stepper_bytes(self, cube_ID, connection_number, speed) -> bytes:
+        PingPong_stepper_hexlist = [0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x01, 0xCC, 0x00, 0x0F, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00]
+        
+        if str(cube_ID).lower() == 'all':
+            cube_ID = 0xFF
+        else:
+            self.integer_check(cube_ID, 'all')
+        PingPong_stepper_hexlist[3] = cube_ID # set cube ID
+        
+        self.integer_check(connection_number)
+        PingPong_stepper_hexlist[5] = connection_number # set connection number
+
+        #PingPong_stepper_hexlist[9] ?
+
+        self.float_check(speed)
+        speed = float(speed)
+        if speed == 0:
+            PingPong_stepper_hexlist[12] = 1 # pause
+        else:
+            PingPong_stepper_hexlist[12] = 2 # resume
+
+        converted_speed = speed # need to convert
+        PingPong_stepper_hexlist[13:14] = converted_speed
+
+
+
+
+    #  정수 체크
+    def integer_check(self, number, option=None) -> None:
+        try: 
+            if not float(number).is_integer():
+                is_integer = False
+            else:
+                is_integer = True
+        except:
+            is_integer = False
+
+        if not is_integer:
+            if option:
+                raise ValueError("Please enter integer number, or '" + str(option) + "'!")
+            else:
+                raise ValueError("Please enter integer number!")
+    # 실수 체크
+    def float_check(self, number) -> None:
+        try: 
+            float(number)
+        except:
+            raise ValueError("Please enter float number!")
+
+
+
 
     # insert bewtween string
     def insert_str(self, string, str_to_insert, index) -> str:
@@ -80,6 +137,16 @@ class Utils():
             return ser
         except:
             return None
+
+
+
+    input_flag = False
+
+    def input(self, string):
+        Utils.input_flag = True
+
+    def print(self, string):
+        pass
         
 
     

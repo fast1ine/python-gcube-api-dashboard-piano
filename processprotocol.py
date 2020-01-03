@@ -4,11 +4,11 @@ class ProcessProtocol():
     def __init__(self):
         pass
 
-    def process_data(self, \
-            buffer, \
-            buffer_size, \
-            transport, \
-            is_robot_connect, \
+    def process_data(self, 
+            buffer, 
+            buffer_size, 
+            transport, 
+            is_robot_connect, 
             connected_robots_number,
             connection_number):
         """return: robot connection, connected robots number"""
