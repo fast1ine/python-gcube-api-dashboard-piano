@@ -24,7 +24,7 @@ class GenerateProtocol():
 
         #FF FF 00 FF 20 00 AD 00 0B 0A 00
         PingPongGn_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00] # 2개 이상
-        PingPongGn_connect_hexlist[4] = number # connection number
+        PingPongGn_connect_hexlist[4] = number*16 # connection number
         return serial.to_bytes(PingPongGn_connect_hexlist)
     
     def SetContinuousSteps_bytes(self, cube_ID, speed) -> bytes:
@@ -61,11 +61,11 @@ class GenerateProtocol():
             PingPong_stepper_hexlist[14] = int(speed_hex[4:6], 16)
 
         return serial.to_bytes(PingPong_stepper_hexlist)
-        
+
 
     def SetAggregateSteps_bytes(self, cube_ID, speed) -> bytes:
         """step motor command to master robot"""
-        # AA AA 00 AA 10 00 CD ~
+        # AA AA 01 AA 10 00 CD ~
         PingPong_stepper_hexlist = []
         
         

@@ -149,13 +149,12 @@ class PingPongThread(GenerateProtocol):
         self._write(super().SetContinuousSteps_bytes(cube_ID, speed))
 
 
-
 def main():
-    PingPongThreadInstance = PingPongThread()
+    PingPongThreadInstance = PingPongThread(1)
     PingPongThreadInstance.start()
     PingPongThreadInstance.wait_until_full_connect()
 
-    PingPongThreadInstance.run_motor(1, 20)
+    PingPongThreadInstance.run_motor('all', 20)
 
     #PingPongThreadInstance.start()
 

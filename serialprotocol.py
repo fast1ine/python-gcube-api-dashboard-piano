@@ -135,7 +135,7 @@ class ReaderThread(threading.Thread):
     def reconnect(self) -> None:
         #print("reconnect")
         try:
-            PORT = Utils().find_bluetooth_dongle(GenerateProtocol.PingPongDongle_connect_bytes)
+            PORT = Utils().find_bluetooth_dongle(GenerateProtocol.DongleInAction_bytes)
             self.serial = Utils().connect_serial_URL(PORT)
             self.write(GenerateProtocol().PingPongGn_connect_bytes(self.connection_number))
             self.alive = True
