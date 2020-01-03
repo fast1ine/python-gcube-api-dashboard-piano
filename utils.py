@@ -82,6 +82,10 @@ class Utils():
             float(number)
         except:
             raise ValueError("Please enter float number!")
+    
+    # unsigned16 으로 변환
+    def unsigned16(self, n):
+        return n & 0xFFFF # "bitwise and" 연산자
 
 
 

@@ -14,3 +14,15 @@ def bytes_to_hex_str(bytesinput):
 
 
 FF FF FF FF 00 00 A8 00 0A 01
+
+
+
+
+
+
+6 to 60 -> 100 to 1000
+
+data [0] = (byte)(step>>8);
+data [1] = (byte)(step&0x000000FF);
+
+

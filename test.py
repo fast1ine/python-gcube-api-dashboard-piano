@@ -83,11 +83,12 @@ class PingPongThread(GenerateProtocol):
             
     # 로봇 연결 해제
     def disconnect_master_robot(self) -> None:
-        if PingPongThread.is_start and self.is_robot_connect():
+        self.start_check()
+        if self.is_robot_connect():
             self.ReaderThreadInstance.write(super(GenerateProtocol).PingPong_disconnect_bytes)
             print("Disconnect master robot.")
         else:
-            raise ValueError("PingpongThread is not started. Cannot operate the function.")
+            print("Master robot is not connected.")
             
     # 로봇 연결 체크
     def is_robot_connect(self) -> bool:
@@ -114,6 +115,7 @@ class PingPongThread(GenerateProtocol):
     # 연결 숫자
     def set_connection_number(self, number) -> None:
         Utils().integer_check(number)
+        # no start check
         if 1 <= number and number <= 8: # 1개 이상 8개 이하 
             self.connection_number = number # 연결할 로봇 대수
             try:
@@ -124,6 +126,26 @@ class PingPongThread(GenerateProtocol):
             raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
 
     def run_motor(self, cube_ID, speed) -> None:
+        self.start_check()
+
+        if cube_ID != 'all':
+            Utils().integer_check(cube_ID)
+            if not (1 <= cube_ID and cube_ID <= 8):
+                raise ValueError("Cube ID must be between 1 to 8.")
+        
+        # speed is in RPM
+        Utils().float_check(speed)
+        if speed < -60: 
+            speed = -60
+            print("Warning. Maximum speed is +-60 rpm.")
+        elif -6 < speed and speed < 6:
+            distance = [abs(speed+6), abs(speed), abs(speed-6)]
+            if speed != 0: print("Warning. Minimum speed is +-6 rpm.")
+            speed = [-6, 0, 6][distance.index(min(distance))]
+        elif speed > 60:
+            speed = 60
+            print("Warning. Maximum speed is +-60 rpm.")
+        
         self._write(super().SetContinuousSteps_bytes(cube_ID, speed))
 
 

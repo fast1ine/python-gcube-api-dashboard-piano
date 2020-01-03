@@ -14,7 +14,6 @@ class GenerateProtocol():
         self.connection_number = connection_number
 
     def PingPongGn_connect_bytes(self, number) -> bytes:
-        Utils().integer_check(number)
         if number < 0:
             raise ValueError("Please enter non-negative number!")
 
@@ -35,25 +34,34 @@ class GenerateProtocol():
         
         if str(cube_ID).lower() == 'all':
             cube_ID = 0xFF
-        else:
-            Utils().integer_check(cube_ID, 'all')
         PingPong_stepper_hexlist[3] = cube_ID # set cube ID (1 to 8)
         
-        Utils().integer_check(self.connection_number)
         PingPong_stepper_hexlist[4] = self.connection_number*16 # set connection number
 
         #PingPong_stepper_hexlist[9] 
 
-        Utils().float_check(speed)
-        speed = float(speed)
+        speed = Utils().unsigned16(round(speed * 100/6)) # convert into unsigned16 integer steprate
         if speed == 0:
             PingPong_stepper_hexlist[12] = 1 # pause
         else:
             PingPong_stepper_hexlist[12] = 2 # resume
+        
+        speed_hex = hex(speed) # calculate hex into devided integer
+        if len(speed_hex) == 3:
+            PingPong_stepper_hexlist[13] = 0
+            PingPong_stepper_hexlist[14] = int(speed_hex[2], 16)
+        elif len(speed_hex) == 4:
+            PingPong_stepper_hexlist[13] = 0
+            PingPong_stepper_hexlist[14] = int(speed_hex[2:4], 16)
+        elif len(speed_hex) == 5:
+            PingPong_stepper_hexlist[13] = int(speed_hex[2], 16)
+            PingPong_stepper_hexlist[14] = int(speed_hex[3:5], 16)
+        elif len(speed_hex) == 6:
+            PingPong_stepper_hexlist[13] = int(speed_hex[2:4], 16)
+            PingPong_stepper_hexlist[14] = int(speed_hex[4:6], 16)
 
-        converted_speed = [int(speed), int(speed)] # need to convert differently
-        PingPong_stepper_hexlist[13:15] = converted_speed
         return serial.to_bytes(PingPong_stepper_hexlist)
+        
 
     def SetAggregateSteps_bytes(self, cube_ID, speed) -> bytes:
         """step motor command to master robot"""
