@@ -148,6 +148,9 @@ class ReaderThread(threading.Thread):
     def get_connected_robots_number(self) -> int:
         return self.protocol.connected_robots_number
 
+    def is_full_connect(self) -> bool:
+        return self.protocol.is_full_connect
+
     def __enter__(self) -> Protocol:
         """\
         Enter context handler. May raise RuntimeError in case the connection
