@@ -60,15 +60,21 @@ class Utils():
         except:
             return None
 
+    # 실수 체크
+    def float_check(self, number) -> None:
+        try: 
+            float(number)
+        except:
+            raise ValueError("Please enter float number!")
+
     #  정수 체크
     def integer_check(self, number, option=None) -> None:
-        try: 
-            if not float(number).is_integer():
-                is_integer = False
-            else:
-                is_integer = True
-        except:
+        self.float_check(number)
+        
+        if not float(number).is_integer():
             is_integer = False
+        else:
+            is_integer = True
 
         if not is_integer:
             if option:
@@ -76,16 +82,31 @@ class Utils():
             else:
                 raise ValueError("Please enter integer number!")
 
-    # 실수 체크
-    def float_check(self, number) -> None:
-        try: 
-            float(number)
-        except:
-            raise ValueError("Please enter float number!")
-    
     # unsigned16 으로 변환
-    def unsigned16(self, n):
-        return n & 0xFFFF # "bitwise and" 연산자
+    def unsigned16(self, n) -> int:
+        return n & 0xFFFF # "bitwise &(and)" 연산자
+
+    # integer를 n 바이트 헥스 리스트로 변환
+    def int_to_hex_n_bytes(self, number, n_bytes) -> list:
+        hex_number = hex(number)[2:]
+        if len(hex_number)%(2*n_bytes) == 0:
+            pass
+        else:
+            hex_number = "0"*(2*n_bytes-len(hex_number)%(2*n_bytes)) + hex_number
+        
+        #print(hex_number)
+        if len(hex_number) > 2*n_bytes:
+            raise ValueError("n_bytes is smaller than integer to hex.")
+
+        hex_list = [int(hex_number[-2:], 16)]
+        #hex_list = [hex_number[-2:]]
+        for i in range(1, n_bytes):
+            hex_list =  [int(hex_number[-2*(i+1):-2*i], 16)] + hex_list
+            #hex_list =  [hex_number[-2*(i+1):-2*i]] + hex_list
+        #print(hex_list)
+        return hex_list
+
+        
 
 
 

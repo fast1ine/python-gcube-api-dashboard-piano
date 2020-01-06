@@ -24,50 +24,48 @@ class GenerateProtocol():
 
         #FF FF 00 FF 20 00 AD 00 0B 0A 00
         PingPongGn_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00] # 2개 이상
-        PingPongGn_connect_hexlist[4] = number*16 # connection number
+        PingPongGn_connect_hexlist[4] = self.connection_number*16 # connection number
         return serial.to_bytes(PingPongGn_connect_hexlist)
     
     def SetContinuousSteps_bytes(self, cube_ID, speed) -> bytes:
         """continuous step motor run"""
         # FF FF FF 01 20 00 CC 00 0F 01 00 00 02 11 11
-        PingPong_stepper_hexlist = [0xFF, 0xFF, 0xFF, 0x01, 0x10, 0x00, 0xCC, 0x00, 0x0F, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00]
+        SetContinuousSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x01, 0x10, 0x00, 0xCC, 0x00, 0x0F, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00]
         
         if str(cube_ID).lower() == 'all':
             cube_ID = 0xFF
-        PingPong_stepper_hexlist[3] = cube_ID # set cube ID (1 to 8)
+        SetContinuousSteps_hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
         
-        PingPong_stepper_hexlist[4] = self.connection_number*16 # set connection number
+        SetContinuousSteps_hexlist[4] = self.connection_number*16 # set connection number
 
-        #PingPong_stepper_hexlist[9] 
+        #SetContinuousSteps_hexlist[9] 
 
         speed = Utils().unsigned16(round(speed * 100/6)) # convert into unsigned16 integer steprate
         if speed == 0:
-            PingPong_stepper_hexlist[12] = 1 # pause
+            SetContinuousSteps_hexlist[12] = 1 # pause
         else:
-            PingPong_stepper_hexlist[12] = 2 # resume
+            SetContinuousSteps_hexlist[12] = 2 # resume
         
-        speed_hex = hex(speed) # calculate hex into devided integer
-        if len(speed_hex) == 3:
-            PingPong_stepper_hexlist[13] = 0
-            PingPong_stepper_hexlist[14] = int(speed_hex[2], 16)
-        elif len(speed_hex) == 4:
-            PingPong_stepper_hexlist[13] = 0
-            PingPong_stepper_hexlist[14] = int(speed_hex[2:4], 16)
-        elif len(speed_hex) == 5:
-            PingPong_stepper_hexlist[13] = int(speed_hex[2], 16)
-            PingPong_stepper_hexlist[14] = int(speed_hex[3:5], 16)
-        elif len(speed_hex) == 6:
-            PingPong_stepper_hexlist[13] = int(speed_hex[2:4], 16)
-            PingPong_stepper_hexlist[14] = int(speed_hex[4:6], 16)
+        SetContinuousSteps_hexlist[13:15] = Utils().int_to_hex_n_bytes(speed, 2) # set speed
 
-        return serial.to_bytes(PingPong_stepper_hexlist)
+        return serial.to_bytes(SetContinuousSteps_hexlist)
 
-
-    def SetAggregateSteps_bytes(self, cube_ID, speed) -> bytes:
+    def SetAggregateSteps_bytes(self, discovery_group, speed_list) -> bytes:
         """step motor command to master robot"""
-        # AA AA 01 AA 10 00 CD ~
-        PingPong_stepper_hexlist = []
+        # AA AA 01 AA 10 00 CD 00 12 02 00 00 00 ~
+        SetAggregateSteps_hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0x00, 0xCD, 0x00, 0x12, 0x02, 0x00, 0x00, 0x00]
         
-        
-        return serial.to_bytes(PingPong_stepper_hexlist)
+        SetAggregateSteps_hexlist[2] = discovery_group # set discovery group ID (1 to 8)
+
+        SetAggregateSteps_hexlist[4] = self.connection_number*16 # set connection number
+
+        SetAggregateSteps_hexlist[8] = 13 + self.connection_number*15 # set data number
+
+        #SetAggregateSteps_hexlist[10] # set mode (0: Continuous Steps, 1: Relative Single Steps, 2: Absolute Single Steps,
+                                       #           3: Scheduled Steps, 4: Scheduled Points)
+
+        for i in range(self.connection_number):
+            SetAggregateSteps_hexlist = SetAggregateSteps_hexlist + self.SetContinuousSteps_bytes(i+1, speed_list[i])
+
+        return serial.to_bytes(SetAggregateSteps_hexlist)
 
