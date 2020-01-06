@@ -154,12 +154,15 @@ class PingPongThread(GenerateProtocol):
 
 
 def main():
-    PingPongThreadInstance = PingPongThread(1)
+    PingPongThreadInstance = PingPongThread(number=2)
     PingPongThreadInstance.start()
     PingPongThreadInstance.wait_until_full_connect()
 
-    PingPongThreadInstance.run_motor(1, 20)
-    #PingPongThreadInstance.run_motor_aggregate([20, 40, 60])
+    #PingPongThreadInstance.run_motor(1, 60)
+    PingPongThreadInstance.run_motor_aggregate([30, 60]) # 다시다시다시
+    #PingPongThreadInstance._write(PingPongThreadInstance.SetSingleSteps_bytes(1, 50, 2000))
+    #PingPongThreadInstance._write(PingPongThreadInstance.SetScheduledSteps_bytes(1, [60, -20], [2000, 1000]))
+
 
     #PingPongThreadInstance.start()
 

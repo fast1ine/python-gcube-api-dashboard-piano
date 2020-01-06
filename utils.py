@@ -37,8 +37,8 @@ class Utils():
                         PORT = str(p.device)
                         return PORT
                     elif data == b"":
-                        print("PingPongDongle_connect_bytes timeout. (1 secs.)")
-                        print('data = b""')
+                        #print("PingPongDongle_connect_bytes timeout. (1 secs.)")
+                        #print('data = b""')
                         pass
                     else:
                         print("What device is this?")
@@ -111,13 +111,16 @@ class Utils():
             raise ValueError("n_bytes is smaller than integer to hex.")
 
         hex_list = [int(hex_number[-2:], 16)]
-        #hex_list = [hex_number[-2:]]
+        #hex_list_str = [hex_number[-2:]]
         for i in range(1, n_bytes):
             hex_list =  [int(hex_number[-2*(i+1):-2*i], 16)] + hex_list
-            #hex_list =  [hex_number[-2*(i+1):-2*i]] + hex_list
-        #print(hex_list)
+            #hex_list_str =  [hex_number[-2*(i+1):-2*i]] + hex_list_str
+        #print(hex_list_str)
         return hex_list
 
+    def RPM_to_SPS(self, SPS) -> float:
+        RPM = 50*(-60/SPS+22)
+        return RPM # -30 to 30, -3 to 3??? 다시다시
         
 
 
