@@ -40,22 +40,25 @@ class GenerateProtocol():
             PingPongGn_connect_hexlist[4] = self.connection_number*16 # connection number
             return serial.to_bytes(PingPongGn_connect_hexlist)
     
+    def _generic_stepper_bytes(self, hexlist, cube_ID):
+        if str(cube_ID).lower() == 'all':
+            cube_ID = 0xFF
+        hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
+        hexlist[4] = self.connection_number*16 # set connection number
+        return hexlist
+
     def SetContinuousSteps_bytes(self, cube_ID, speed, _option = None) -> bytes or list:
-        """continuous step motor run"""
         # FF FF FF 00 10 00 CC 00 0F 01 00 00 02 11 11
         SetContinuousSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xCC, 0x00, 0x0F, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00]
         
-        if str(cube_ID).lower() == 'all':
-            cube_ID = 0xFF
-        SetContinuousSteps_hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
-        SetContinuousSteps_hexlist[4] = self.connection_number*16 # set connection number
+        SetContinuousSteps_hexlist = self._generic_stepper_bytes(SetContinuousSteps_hexlist, cube_ID) # generic process
         #SetContinuousSteps_hexlist[9] 
         speed = Utils().unsigned16(round(speed * 100/6)) # convert into unsigned16 integer steprate
         if speed == 0:
             SetContinuousSteps_hexlist[12] = 1 # pause
         else:
             SetContinuousSteps_hexlist[12] = 2 # resume
-        SetContinuousSteps_hexlist[13:15] = Utils().int_to_hex_n_bytes(speed, 2) # set speed
+            SetContinuousSteps_hexlist[13:15] = Utils().int_to_hex_n_bytes(speed, 2) # set speed
 
         if _option == None:
             return serial.to_bytes(SetContinuousSteps_hexlist)
@@ -65,15 +68,11 @@ class GenerateProtocol():
             print("Warning: Unavailable option.")
             return serial.to_bytes(SetContinuousSteps_hexlist)
 
-    def SetSingleSteps_bytes(self, cube_ID, method, speed, start_phase, step_value, _option = None) -> bytes:
-        """continuous step motor run"""
+    def SetSingleSteps_bytes(self, cube_ID, method, speed, start_phase, step_value, _option = None) -> bytes or list:
         # FF FF FF 00 10 00 C1 00 13 02 01 00 02 00 00 00 00 00 00 ~
         SetSingleSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC1, 0x00, 0x13, 0x02, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         
-        if str(cube_ID).lower() == 'all':
-            cube_ID = 0xFF
-        SetSingleSteps_hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
-        SetSingleSteps_hexlist[4] = self.connection_number*16 # set connection number
+        SetSingleSteps_hexlist = self._generic_stepper_bytes(SetSingleSteps_hexlist, cube_ID) # generic process
         SetSingleSteps_hexlist[10] = method # set method (1: RelativeSingleSteps, 2: AbsoluteSingleSteps)
         speed = Utils().unsigned16(round(speed * 100/6)) # convert into unsigned16 integer steprate
         if speed == 0:
@@ -82,7 +81,7 @@ class GenerateProtocol():
             SetSingleSteps_hexlist[12] = 2 # resume
         SetSingleSteps_hexlist[13:15] = Utils().int_to_hex_n_bytes(speed, 2) # set speed
         SetSingleSteps_hexlist[15:17] = [0, 0] # set start phase###########3
-        SetSingleSteps_hexlist[17:] = [0, 0] # set step value ##############
+        SetSingleSteps_hexlist[17:19] = [0, 0] # set step value ##############
         
         if _option == None:
             return serial.to_bytes(SetSingleSteps_hexlist)
@@ -92,22 +91,18 @@ class GenerateProtocol():
             print("Warning: Unavailable option.")
             return serial.to_bytes(SetSingleSteps_hexlist)
 
-    def SetScheduledSteps_bytes(self, cube_ID, speed, step_type, _option = None) -> bytes:
-        """continuous step motor run"""
+    def SetScheduledSteps_bytes(self, cube_ID, speed, step_type, _option = None) -> bytes or list:
         # FF FF FF 00 10 00 CA 00 15 02 03 00 02 00 00 ~
         SetScheduledSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xCA, 0x00, 0x15, 0x02, 0x03, 0x00, 0x02, 0x00, 0x00]
         
-        if str(cube_ID).lower() == 'all':
-            cube_ID = 0xFF
-        SetScheduledSteps_hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
-        SetScheduledSteps_hexlist[4] = self.connection_number*16 # set connection number
+        SetScheduledSteps_hexlist = self._generic_stepper_bytes(SetScheduledSteps_hexlist, cube_ID) # generic process
         SetScheduledSteps_hexlist[11] = step_type # step type (0: FullSteps, 4: SetServo)
         speed = Utils().unsigned16(round(speed * 100/6)) # convert into unsigned16 integer steprate
         if speed == 0:
             SetScheduledSteps_hexlist[12] = 1 # pause
         else:
             SetScheduledSteps_hexlist[12] = 2 # resume
-        SetScheduledSteps_hexlist[13:] = [0, 0] # CRC16 ###############
+        SetScheduledSteps_hexlist[13:15] = [0, 0] # CRC16 ###############
         
         if _option == None:
             return serial.to_bytes(SetScheduledSteps_hexlist)
@@ -117,22 +112,18 @@ class GenerateProtocol():
             print("Warning: Unavailable option.")
             return serial.to_bytes(SetScheduledSteps_hexlist)
 
-    def SetScheduledPoints_bytes(self, cube_ID, speed, step_type, _option = None) -> bytes:
-        """continuous step motor run"""
+    def SetScheduledPoints_bytes(self, cube_ID, speed, step_type, _option = None) -> bytes or list:
         # FF FF FF 00 10 00 CB 00 15 02 04 00 02 00 00 ~
         SetScheduledPoints_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xCA, 0x00, 0x15, 0x02, 0x03, 0x00, 0x02, 0x00, 0x00]
         
-        if str(cube_ID).lower() == 'all':
-            cube_ID = 0xFF
-        SetScheduledPoints_hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
-        SetScheduledPoints_hexlist[4] = self.connection_number*16 # set connection number
+        SetScheduledPoints_hexlist = self._generic_stepper_bytes(SetScheduledPoints_hexlist, cube_ID) # generic process
         SetScheduledPoints_hexlist[11] = step_type # step type (0: FullSteps, 4: SetServo)
         speed = Utils().unsigned16(round(speed * 100/6)) # convert into unsigned16 integer steprate
         if speed == 0:
             SetScheduledPoints_hexlist[12] = 1 # pause
         else:
             SetScheduledPoints_hexlist[12] = 2 # resume
-        SetScheduledPoints_hexlist[13:] = [0, 0] # CRC16 ###############
+        SetScheduledPoints_hexlist[13:15] = [0, 0] # CRC16 ###############
         
         if _option == None:
             return serial.to_bytes(SetScheduledPoints_hexlist)
