@@ -125,7 +125,7 @@ class PingPongThread(GenerateProtocol):
         else:
             raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
 
-    def run_motor_countinuous(self, cube_ID, speed) -> None:
+    def run_motor(self, cube_ID, speed) -> None:
         self.start_check()
 
         if cube_ID != 'all':
@@ -136,30 +136,30 @@ class PingPongThread(GenerateProtocol):
         elif cube_ID > self.connection_number:
             raise ValueError("Cube ID must be less or equal to connection number.")
 
-        # speed is in RPM
         Utils().float_check(speed)
-        if speed < -60: 
-            speed = -60
-            print("Warning. Maximum speed is +-60 RPM.")
-        elif -6 < speed and speed < 6:
-            distance = [abs(speed+6), abs(speed), abs(speed-6)]
-            if speed != 0: print("Warning. Minimum speed is +-6 RPM.")
-            speed = [-6, 0, 6][distance.index(min(distance))]
-        elif speed > 60:
-            speed = 60
-            print("Warning. Maximum speed is +-60 RPM.")
+        speed = super().truncate_speed(speed) # truncate speed into -60 to 60 RPM
         
         self._write(super().SetContinuousSteps_bytes(cube_ID, speed))
 
-    def run_motor_protocol(self) -> None:
-        pass
+    def run_motor_aggregate(self, speed_list) -> None:
+        self.start_check()
+
+        if len(speed_list) != self.connection_number:
+            raise ValueError("Speed list must be equal to connection number.")
+
+        Utils().float_check(speed_list)
+        for i in range(len(speed_list)):
+            speed_list[i] = super().truncate_speed(speed_list[i]) # truncate speed into -60 to 60 RPM
+        self._write(super().SetAggregateSteps_bytes(1, speed_list))
+
 
 def main():
-    PingPongThreadInstance = PingPongThread(1)
+    PingPongThreadInstance = PingPongThread(3)
     PingPongThreadInstance.start()
     PingPongThreadInstance.wait_until_full_connect()
 
-    PingPongThreadInstance.run_motor_countinuous(1, 20)
+    #PingPongThreadInstance.run_motor(1, 20)
+    PingPongThreadInstance.run_motor_aggregate([20, 40, 60])
 
     #PingPongThreadInstance.start()
 

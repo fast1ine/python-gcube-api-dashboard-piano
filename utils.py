@@ -62,25 +62,37 @@ class Utils():
 
     # 실수 체크
     def float_check(self, number) -> None:
-        try: 
-            float(number)
+        try:
+            number = list(number)
         except:
-            raise ValueError("Please enter float number!")
+            number = [number]
+
+        for i in range(len(number)):
+            try: 
+                float(number[i])
+            except:
+                raise ValueError("Please enter float number!")
 
     #  정수 체크
     def integer_check(self, number, option=None) -> None:
         self.float_check(number)
-        
-        if not float(number).is_integer():
-            is_integer = False
-        else:
-            is_integer = True
 
-        if not is_integer:
-            if option:
-                raise ValueError("Please enter integer number, or '" + str(option) + "'!")
+        try:
+            number = list(number)
+        except:
+            number = [number]
+
+        for i in range(len(number)):
+            if not float(number[i]).is_integer():
+                is_integer = False
             else:
-                raise ValueError("Please enter integer number!")
+                is_integer = True
+
+            if not is_integer:
+                if option:
+                    raise ValueError("Please enter integer number, or '" + str(option) + "'!")
+                else:
+                    raise ValueError("Please enter integer number!")
 
     # unsigned16 으로 변환
     def unsigned16(self, n) -> int:
