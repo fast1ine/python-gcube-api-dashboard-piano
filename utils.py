@@ -99,7 +99,7 @@ class Utils():
         return n & 0xFFFF # "bitwise &(and)" 연산자
 
     # integer를 n 바이트 헥스 리스트로 변환
-    def int_to_hex_n_bytes(self, number, n_bytes) -> list:
+    def int_to_hexlist(self, number, n_bytes) -> list:
         hex_number = hex(number)[2:]
         if len(hex_number)%(2*n_bytes) == 0:
             pass
@@ -128,7 +128,7 @@ class Utils():
         else:
             SPS = None
         #RPM = SPS
-        return SPS # -30 to 30, -3 to 3?
+        return SPS # -30 to 30
         
 
 
