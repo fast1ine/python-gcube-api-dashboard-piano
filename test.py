@@ -141,6 +141,7 @@ class PingPongThread(GenerateProtocol):
         
         self._write(super().SetContinuousSteps_bytes(cube_ID, speed))
 
+    '''
     def run_motor_aggregate(self, speed_list) -> None:
         self.start_check()
 
@@ -151,6 +152,7 @@ class PingPongThread(GenerateProtocol):
         for i in range(len(speed_list)):
             speed_list[i] = super().truncate_speed(speed_list[i]) # truncate speed into -30 to 30 RPM
         self._write(super().SetAggregateSteps_bytes(1, speed_list))
+    '''
 
 
 def main():
@@ -159,11 +161,9 @@ def main():
     PingPongThreadInstance.wait_until_full_connect()
 
     PingPongThreadInstance.run_motor('all', 30)
-    #PingPongThreadInstance.run_motor_aggregate([-30, -15]) 
     #PingPongThreadInstance._write(PingPongThreadInstance.SetSingleSteps_bytes(1, 20, 2000))
     #PingPongThreadInstance._write(PingPongThreadInstance.SetScheduledSteps_bytes(1, [60, -20], [2000, 1000]))
     #PingPongThreadInstance._write(PingPongThreadInstance.SetContinuousSteps_bytes(1, 20, pause=False))
-
 
     #PingPongThreadInstance.start()
 
