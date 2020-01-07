@@ -152,6 +152,7 @@ class StepperProtocol():
         SetAggregateSteps_hexlist[2] = discovery_group 
         ### set connection number
         SetAggregateSteps_hexlist[4] = self.connection_number*16 
+        ### get total data size
         in_bytes_length = len(in_bytes)
         total_length = 0
         for i in range(in_bytes_length):

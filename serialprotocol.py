@@ -142,9 +142,6 @@ class ReaderThread(threading.Thread):
         except Exception as error:
             self.protocol.connection_lost(error)
 
-    def is_robot_connect(self) -> bool:
-        return self.protocol.is_robot_connect
-
     def get_connected_robots_number(self) -> int:
         return self.protocol.connected_robots_number
 

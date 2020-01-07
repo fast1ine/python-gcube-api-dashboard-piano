@@ -8,7 +8,6 @@ class ProcessProtocol():
             buffer, 
             buffer_size, 
             transport, 
-            is_robot_connect, 
             connected_robots_number,
             connection_number) -> (bool, int):
         """return: robot connection, connected robots number"""
@@ -16,7 +15,6 @@ class ProcessProtocol():
         self.buffer = buffer
         self.buffer_size = buffer_size
         self.transport = transport
-        self.is_robot_connect = is_robot_connect
         self.connected_robots_number = connected_robots_number
         self.connection_number = connection_number
 
@@ -27,25 +25,25 @@ class ProcessProtocol():
         else:
             return self._unregistered()
 
-    def _unregistered(self) -> (bool, int):
+    def _unregistered(self) -> int:
         #print("buffer_size:", self.buffer_size)
         #print("Operation is not registered.")
-        return self.is_robot_connect, self.connected_robots_number
+        return self.connected_robots_number
 
-    def _master_robot(self) -> (bool, int): # master 로봇
+    def _master_robot(self) -> int: # master 로봇
         if (self.connection_number == 1 and self.buffer[6] == int(0xDA) and self.buffer[9] != int(0xC0))\
             or (self.connection_number > 1 and self.buffer[6] == int(0xAD) and self.buffer[9] != int(0xC0)):
             print("Connected with a master robot.") # 로봇 연결
-            return True, 1
+            return 1
         elif self.buffer[9] == int(0xC0):
-            if self.is_robot_connect:
+            if self.connected_robots_number > 0:
                 print("Disconnected with a master robot. Sleep 2 seconds.") # 로봇 연결 해제    
                 self.transport.serial.close() # 시리얼 닫음
                 time.sleep(2) # sleep 2 seconds
                 self.transport.reconnect() # 재연결
             else:
                 print("Already disconnected.")
-            return False, 0
+            return 0
         else:
             return self._unregistered()
     
@@ -54,10 +52,10 @@ class ProcessProtocol():
             for i in range(8):
                 if self.buffer[10+i] == 15:
                     print("Connected robots:", i) # (i-1)대 slave 로봇 연결
-                    return True, i
+                    return i
                 if i == 7:
                     print("Connected robots: 8")# 7대 slave 로봇 연결
-                    return True, 8
+                    return 8
         else:
             return self._unregistered()
 

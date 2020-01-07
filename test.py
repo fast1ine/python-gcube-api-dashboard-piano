@@ -84,16 +84,11 @@ class PingPongThread(GenerateProtocol):
     # 로봇 연결 해제
     def disconnect_master_robot(self) -> None:
         self.start_check()
-        if self.is_robot_connect():
+        if self.get_connected_robots_number() > 0:
             self.ReaderThreadInstance.write(super(GenerateProtocol).PingPong_disconnect_bytes)
             print("Disconnect master robot.")
         else:
             print("Master robot is not connected.")
-            
-    # 로봇 연결 체크
-    def is_robot_connect(self) -> bool:
-        self.start_check()
-        return self.ReaderThreadInstance.is_robot_connect()
 
     # 로봇 연결 대수 체크
     def get_connected_robots_number(self) -> int:
