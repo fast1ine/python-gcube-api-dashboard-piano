@@ -158,7 +158,7 @@ def main():
     PingPongThreadInstance.start()
     PingPongThreadInstance.wait_until_full_connect()
 
-    #PingPongThreadInstance.run_motor('all', 30)
+    PingPongThreadInstance.run_motor('all', 30)
     #PingPongThreadInstance.run_motor_aggregate([-30, -15]) 
     #PingPongThreadInstance._write(PingPongThreadInstance.SetSingleSteps_bytes(1, 20, 2000))
     #PingPongThreadInstance._write(PingPongThreadInstance.SetScheduledSteps_bytes(1, [60, -20], [2000, 1000]))
