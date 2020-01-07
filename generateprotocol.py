@@ -14,23 +14,21 @@ class GenerateProtocol():
         self.connection_number = connection_number
 
     def truncate_speed(self, speed) -> int or float:
-        if speed < -60: 
-            speed = -60
-            print("Warning. Maximum speed is +-60 RPM.")
-        elif -6 < speed and speed < 6:
-            distance = [abs(speed+6), abs(speed), abs(speed-6)]
+        if speed < -30: 
+            speed = -30
+            print("Warning. Maximum speed is +-30 RPM.")
+        elif -3 < speed and speed < 3:
+            distance = [abs(speed+3), abs(speed), abs(speed-3)]
             if speed != 0: 
-                print("Warning. Minimum speed is +-6 RPM.")
-            speed = [-6, 0, 6][distance.index(min(distance))]
-        elif speed > 60:
-            speed = 60
-            print("Warning. Maximum speed is +-60 RPM.")
+                print("Warning. Minimum speed is +-3 RPM.")
+            speed = [-3, 0, 3][distance.index(min(distance))]
+        elif speed > 30:
+            speed = 30
+            print("Warning. Maximum speed is +-30 RPM.")
         return speed
 
     def PingPongGn_connect_bytes(self, number) -> bytes:
-        if number < 0:
-            raise ValueError("Please enter non-negative number!")
-        elif number == 1: # 1개
+        if number == 1: # 1개
             #DD DD 00 00 00 00 DA 00 0B 00 00
             PingPongG1_connect_hexlist = [0xDD, 0xDD, 0x00, 0x00, 0x00, 0x00, 0xDA, 0x00, 0x0B, 0x00, 0x00]
             return serial.to_bytes(PingPongG1_connect_hexlist)
@@ -43,7 +41,9 @@ class GenerateProtocol():
     def _generic_stepper_bytes(self, hexlist, cube_ID) -> list:
         if str(cube_ID).lower() == 'all':
             cube_ID = 0xFF
-        hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
+            hexlist[3] = cube_ID
+        else:
+            hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
         hexlist[4] = self.connection_number*16 # set connection number
         return hexlist
 
@@ -108,7 +108,7 @@ class GenerateProtocol():
         if step_type == 0: # Full Step mode
             for i in range(len(speed_seq_list)):
                 SetScheduledSteps_hexlist[15+4*i:17+4*i] = Utils().int_to_hex_n_bytes(speed_seq_list[i], 2) # set speed schedule
-                SetScheduledSteps_hexlist[17+4*i:19+4*i] = Utils().int_to_hex_n_bytes(step_seq_list[i], 2) # set speed schedule
+                SetScheduledSteps_hexlist[17+4*i:19+4*i] = Utils().int_to_hex_n_bytes(step_seq_list[i], 2) # set speed schedule (if speed = 0, sleep [step]ms.)
         elif step_type == 4: # Servo mode
             for i in range(len(speed_seq_list)):
                 SetScheduledSteps_hexlist[15+6*i:17+6*i] = Utils().int_to_hex_n_bytes(speed_seq_list[i], 2) # set speed schedule

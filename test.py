@@ -133,11 +133,11 @@ class PingPongThread(GenerateProtocol):
             cube_ID = float(cube_ID) # float으로 변환
             if not (1 <= cube_ID and cube_ID <= 8):
                 raise ValueError("Cube ID must be between 1 to 8.")
-        elif cube_ID > self.connection_number:
-            raise ValueError("Cube ID must be less or equal to connection number.")
+            elif cube_ID > self.connection_number:
+                raise ValueError("Cube ID must be less or equal to connection number.")
 
         Utils().float_check(speed)
-        speed = super().truncate_speed(speed) # truncate speed into -60 to 60 RPM
+        speed = super().truncate_speed(speed) # truncate speed into -30 to 30 RPM
         
         self._write(super().SetContinuousSteps_bytes(cube_ID, speed))
 
@@ -149,7 +149,7 @@ class PingPongThread(GenerateProtocol):
 
         Utils().float_check(speed_list)
         for i in range(len(speed_list)):
-            speed_list[i] = super().truncate_speed(speed_list[i]) # truncate speed into -60 to 60 RPM
+            speed_list[i] = super().truncate_speed(speed_list[i]) # truncate speed into -30 to 30 RPM
         self._write(super().SetAggregateSteps_bytes(1, speed_list))
 
 
@@ -158,9 +158,9 @@ def main():
     PingPongThreadInstance.start()
     PingPongThreadInstance.wait_until_full_connect()
 
-    #PingPongThreadInstance.run_motor(1, 60)
-    PingPongThreadInstance.run_motor_aggregate([30, 60]) # 다시다시다시
-    #PingPongThreadInstance._write(PingPongThreadInstance.SetSingleSteps_bytes(1, 50, 2000))
+    #PingPongThreadInstance.run_motor('all', 30)
+    PingPongThreadInstance.run_motor_aggregate([-30, -15]) 
+    #PingPongThreadInstance._write(PingPongThreadInstance.SetSingleSteps_bytes(1, 20, 2000))
     #PingPongThreadInstance._write(PingPongThreadInstance.SetScheduledSteps_bytes(1, [60, -20], [2000, 1000]))
 
 

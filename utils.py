@@ -118,9 +118,17 @@ class Utils():
         #print(hex_list_str)
         return hex_list
 
-    def RPM_to_SPS(self, SPS) -> float:
-        RPM = 50*(-60/SPS+22)
-        return RPM # -30 to 30, -3 to 3??? 다시다시
+    def RPM_to_SPS(self, RPM) -> float:
+        if 3 <= RPM and RPM <= 30:
+            SPS = 50*(-60/RPM+22)
+        elif -30 <= RPM and RPM <= -3:
+            SPS = 50*(-60/RPM-22)
+        elif RPM == 0:
+            SPS = 0
+        else:
+            SPS = None
+        #RPM = SPS
+        return SPS # -30 to 30, -3 to 3?
         
 
 
