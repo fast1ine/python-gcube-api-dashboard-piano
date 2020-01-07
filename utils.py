@@ -66,7 +66,7 @@ class Utils():
             number = list(number)
         except:
             number = [number]
-
+            
         for i in range(len(number)):
             try: 
                 float(number[i])
@@ -76,7 +76,6 @@ class Utils():
     #  정수 체크
     def integer_check(self, number, option=None) -> None:
         self.float_check(number)
-
         try:
             number = list(number)
         except:

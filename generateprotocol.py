@@ -12,6 +12,7 @@ class GenerateProtocol():
 
     def __init__(self, connection_number=1):
         self.connection_number = connection_number
+        self.current_speed_list = [0]*self.connection_number
 
     def truncate_speed(self, speed) -> int or float:
         if speed < -30: 
@@ -145,11 +146,20 @@ class GenerateProtocol():
 
         return serial.to_bytes(SetAggregateSteps_hexlist)
 
-    def SetPauseSteps_bytes(self, cube_ID, pause, agg=False, discovery_group=None) -> bytes:
+    def SetPauseSteps_bytes(self, pause, cube_ID=None, agg=False, discovery_group=None) -> bytes:
         if not agg:
             # FF FF FF 00 10 00 C0 00 0A 02
             SetPauseSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC0, 0x00, 0x0A, 0x02]
-            SetPauseSteps_hexlist = self._generic_stepper_hexlist(SetPauseSteps_hexlist, cube_ID, pause) # generic process (cube ID & robot number & pause protocol)
+            if str(cube_ID).lower() == 'all':
+                cube_ID = 0xFF
+                SetPauseSteps_hexlist[3] = cube_ID
+            else:
+                SetPauseSteps_hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
+            SetPauseSteps_hexlist[4] = self.connection_number*16 # set connection number
+            if pause:
+                SetPauseSteps_hexlist[9] = 1 # pause protocol
+            else:
+                SetPauseSteps_hexlist[9] = 2 # resume protocol
         else: # aggregate mode
             # AA AA 01 AA 10 00 C0 00 0A 02
             SetPauseSteps_hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0x00, 0xC0, 0x00, 0x0A, 0x02]
@@ -159,5 +169,30 @@ class GenerateProtocol():
                 SetPauseSteps_hexlist[9] = 1 # pause protocol
             else:
                 SetPauseSteps_hexlist[9] = 2 # resume protocol
-
         return serial.to_bytes(SetPauseSteps_hexlist)
+
+    def SetInstantTorque(self, is_max_torque, cube_ID=None, agg=False, discovery_group=None):
+        # SPS > 700
+        if not agg:
+            # FF FF FF 00 10 00 C0 00 0A 02
+            SetInstantTorque_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC6, 0x00, 0x0A, 0x02]
+            if str(cube_ID).lower() == 'all':
+                cube_ID = 0xFF
+                SetInstantTorque_hexlist[3] = cube_ID
+            else:
+                SetInstantTorque_hexlist[3] = int(cube_ID - 1) # set cube ID (1 to 8 -> 0 to 7)
+            SetInstantTorque_hexlist[4] = self.connection_number*16 # set connection number
+            if is_max_torque:
+                SetInstantTorque_hexlist[9] = 1 # max torque
+            else:
+                SetInstantTorque_hexlist[9] = 0 # default torque
+        else: # aggregate mode
+            # AA AA 01 AA 10 00 C0 00 0A 02
+            SetInstantTorque_hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0x00, 0xC6, 0x00, 0x0A, 0x02]
+            SetInstantTorque_hexlist[2] = discovery_group
+            SetInstantTorque_hexlist[4] = self.connection_number*16 # set connection number
+            if is_max_torque:
+                SetInstantTorque_hexlist[9] = 1 # max torque
+            else:
+                SetInstantTorque_hexlist[9] = 0 # default torque
+        return serial.to_bytes(SetInstantTorque_hexlist)
