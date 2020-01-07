@@ -3,10 +3,6 @@ from stepperprotocol import StepperProtocol
 from utils import Utils
 
 class GenerateProtocol(StepperProtocol):
-    #DD DD DD DD 00 01 DA 00 0B 00 0D
-    PingPongDongle_connect_hexlist = [0xDD, 0xDD, 0xDD, 0xDD, 0x00, 0x01, 0xDA, 0x00, 0x0B, 0x00, 0x0D]
-    DongleInAction_bytes = serial.to_bytes(PingPongDongle_connect_hexlist)
-
     #FF FF FF FF 00 00 A8 00 0A 01
     PingPong_disconnect_hexlist = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xA8, 0x00, 0x0A, 0x01]
     PingPong_disconnect_bytes = serial.to_bytes(PingPong_disconnect_hexlist)
@@ -15,6 +11,11 @@ class GenerateProtocol(StepperProtocol):
         self.connection_number = connection_number
         self.current_speed_list = [0]*self.connection_number
         StepperProtocol.__init__(self, self.connection_number)
+
+    def DongleInAction_bytes(self) -> bytes:
+        #DD DD DD DD 00 01 DA 00 0B 00 0D
+        DongleInAction_hexlist = [0xDD, 0xDD, 0xDD, 0xDD, 0x00, 0x01, 0xDA, 0x00, 0x0B, 0x00, 0x0D]
+        return serial.to_bytes(DongleInAction_hexlist)
 
     def PingPongGn_connect_bytes(self, number) -> bytes:
         if number == 1: # 1개
@@ -26,4 +27,7 @@ class GenerateProtocol(StepperProtocol):
             PingPongGn_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00] 
             PingPongGn_connect_hexlist[4] = self.connection_number*16 # connection number
             return serial.to_bytes(PingPongGn_connect_hexlist)
+            
+
+            
     

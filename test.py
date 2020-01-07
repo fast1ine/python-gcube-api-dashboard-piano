@@ -16,8 +16,8 @@ class PingPongThread(GenerateProtocol):
         if not PingPongThread.is_instance:
             self.set_connection_number(number) # 연결할 로봇 대수
             PingPongThread.is_instance = True # 인스턴스 생성 확인
-            super().__init__(self.connection_number) # generate protocol init
-            self.PORT = Utils().find_bluetooth_dongle(GenerateProtocol.DongleInAction_bytes) # 동글 포트 찾기
+            GenerateProtocol.__init__(self, self.connection_number) # generate protocol init
+            self.PORT = Utils().find_bluetooth_dongle(GenerateProtocol.DongleInAction_bytes(self)) # 동글 포트 찾기
         else:
             raise ValueError("PingpongThread instance cannot be constructed above 1.")
 
@@ -65,10 +65,10 @@ class PingPongThread(GenerateProtocol):
                 if ser:
                     break
                 else:
-                    self.PORT = Utils().find_bluetooth_dongle(super().DongleInAction_bytes)
+                    self.PORT = Utils().find_bluetooth_dongle(GenerateProtocol.DongleInAction_bytes(self))
             self.ReaderThreadInstance = ReaderThread(ser, rawProtocol)
             self.ReaderThreadInstance.connection_number = self.connection_number
-            self.ReaderThreadInstance.write(super().PingPongGn_connect_bytes(self.connection_number))
+            self.ReaderThreadInstance.write(GenerateProtocol.PingPongGn_connect_bytes(self, self.connection_number))
         else:
             #raise ValueError("No instance of PingpongThread! Please construct instance first.")
             # cannot reach
@@ -85,7 +85,7 @@ class PingPongThread(GenerateProtocol):
     def disconnect_master_robot(self) -> None:
         self.start_check()
         if self.get_connected_robots_number() > 0:
-            self.ReaderThreadInstance.write(super(GenerateProtocol).PingPong_disconnect_bytes)
+            self.ReaderThreadInstance.write(GenerateProtocol.PingPong_disconnect_bytes)
             print("Disconnect master robot.")
         else:
             print("Master robot is not connected.")
@@ -132,9 +132,9 @@ class PingPongThread(GenerateProtocol):
                 raise ValueError("Cube ID must be less or equal to connection number.")
 
         Utils().float_check(speed)
-        speed = super().truncate_speed(speed) # truncate speed into -30 to 30 RPM
+        speed = GenerateProtocol.truncate_speed(self, speed) # truncate speed into -30 to 30 RPM
         
-        self._write(super().SetContinuousSteps_bytes(cube_ID, speed))
+        self._write(GenerateProtocol.SetContinuousSteps_bytes(self, cube_ID, speed))
 
     '''
     def run_motor_aggregate(self, speed_list) -> None:
@@ -151,7 +151,7 @@ class PingPongThread(GenerateProtocol):
 
 
 def main():
-    PingPongThreadInstance = PingPongThread(number=1)
+    PingPongThreadInstance = PingPongThread(number=3)
     PingPongThreadInstance.start()
     PingPongThreadInstance.wait_until_full_connect()
 

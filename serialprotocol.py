@@ -76,9 +76,9 @@ class ReaderThread(threading.Thread):
             return
         error = None
         self._connection_made.set()
-        while not self.end_flag: # 무한 루프 for USB 연결
+        while not self.end_flag: # 무한 루프 for 블루투스 동글
             #print("Threadworking")
-            if not self.serial or (not self.serial.is_open and not self.alive): # USB가 끊겼을 때
+            if not self.serial or (not self.serial.is_open and not self.alive): # 블루투스 동글이 끊겼을 때
                 self.reconnect()
             while self.alive and self.serial and self.serial.is_open: # 무한 루프 for 시리얼 읽기
                 try:
@@ -135,7 +135,7 @@ class ReaderThread(threading.Thread):
     def reconnect(self) -> None:
         #print("reconnect")
         try:
-            PORT = Utils().find_bluetooth_dongle(GenerateProtocol.DongleInAction_bytes)
+            PORT = Utils().find_bluetooth_dongle(GenerateProtocol().DongleInAction_bytes())
             self.serial = Utils().connect_serial_URL(PORT)
             self.write(GenerateProtocol().PingPongGn_connect_bytes(self.connection_number))
             self.alive = True

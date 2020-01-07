@@ -6,6 +6,7 @@ class StepperProtocol():
         self.connection_number = connection_number
 
     def _generic_stepper_hexlist(self, hexlist, cube_ID, pause) -> list:
+        """generic protocol (cube ID, connection number, pause)"""
         if str(cube_ID).lower() == 'all':
             cube_ID = 0xFF
             hexlist[3] = cube_ID
@@ -23,10 +24,12 @@ class StepperProtocol():
         return hexlist
 
     def _RPM_to_hexlist(self, speed, n) -> list:
+        """convert RPM to SPS in unsigned 16 hex list with n bytes"""
         unsigned_speed = Utils().unsigned16(round(Utils().RPM_to_SPS(speed)))
         return Utils().int_to_hexlist(unsigned_speed, n)
 
     def truncate_speed(self, speed) -> int or float:
+        """truncate speed between -30 to 30 RPM"""
         if speed < -30: 
             speed = -30
             print("Warning. Maximum speed is +-30 RPM.")
