@@ -5,13 +5,18 @@ class StepperProtocol():
     def __init__(self, connection_number):
         self.connection_number = connection_number
 
-    def _generic_stepper_hexlist(self, hexlist, cube_ID, pause) -> list:
-        """generic protocol (cube ID, connection number, pause)"""
-        if str(cube_ID).lower() == 'all':
-            cube_ID = 0xFF
-            hexlist[3] = cube_ID
+
+    def _generic_stepper_hexlist(self, hexlist, cube_ID, discovery_group, pause) -> list:
+        """generic protocol (discovery_group, cube ID, connection number, pause)"""
+        ### set discovery group ID (1 to 8)
+        if discovery_group == None:
+            hexlist[2] = 0xFF
         else:
-            ### set cube ID (1 to 8 -> 0 to 7)
+            hexlist[2] = discovery_group
+        ### set cube ID (1 to 8 -> 0 to 7)
+        if str(cube_ID).lower() == 'all':
+            hexlist[3] = 0xFF
+        else:
             hexlist[3] = int(cube_ID - 1) 
         ### set connection number
         hexlist[4] = self.connection_number*16 
@@ -23,10 +28,12 @@ class StepperProtocol():
             hexlist[12] = 2 
         return hexlist
 
+
     def _RPM_to_hexlist(self, speed, n) -> list:
         """convert RPM to SPS in unsigned 16 hex list with n bytes"""
         unsigned_speed = Utils().unsigned16(round(Utils().RPM_to_SPS(speed)))
         return Utils().int_to_hexlist(unsigned_speed, n)
+
 
     def truncate_speed(self, speed) -> int or float:
         """truncate speed between -30 to 30 RPM"""
@@ -43,28 +50,34 @@ class StepperProtocol():
             print("Warning. Maximum speed is +-30 RPM.")
         return speed
 
-    def SetContinuousSteps_bytes(self, cube_ID, speed, pause=False, _option=None) -> bytes or list:
+
+    def make_dummy(self, in_bytes) -> bytes:
+        ## make OP code into 0
+        in_bytes_list = list(in_bytes)
+        in_bytes_list[6] = 0
+        return serial.to_bytes(in_bytes_list)
+
+
+    def SetContinuousSteps_bytes(self, cube_ID, speed, discovery_group=None, pause=False) -> bytes or list:
         ### FF FF FF 00 10 00 CC 00 0F 01 00 00 02 11 11
         SetContinuousSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xCC, 0x00, 0x0F, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00]
         
-        ### generic process (cube ID & robot number & pause protocol)
-        SetContinuousSteps_hexlist = self._generic_stepper_hexlist(SetContinuousSteps_hexlist, cube_ID, pause)
+        ### generic process (discovery group & cube ID & robot number & pause protocol)
+        SetContinuousSteps_hexlist = self._generic_stepper_hexlist(SetContinuousSteps_hexlist, cube_ID, discovery_group, pause)
         ### Set mode multirole 
         #SetContinuousSteps_hexlist[9] 
         ### convert & set speed
         SetContinuousSteps_hexlist[13:15] = self._RPM_to_hexlist(speed, 2) 
 
-        if _option == None:
-            return serial.to_bytes(SetContinuousSteps_hexlist)
-        elif _option == "hex":
-            return SetContinuousSteps_hexlist
+        return serial.to_bytes(SetContinuousSteps_hexlist)
 
-    def SetSingleSteps_bytes(self, cube_ID, speed, step, pause=False, _option=None) -> bytes or list:
+
+    def SetSingleSteps_bytes(self, cube_ID, speed, step, discovery_group=None, pause=False) -> bytes or list:
         ### FF FF FF 00 10 00 C1 00 13 02 01 00 02 00 00 00 00 00 00 ~
         SetSingleSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC1, 0x00, 0x13, 0x02, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         
-        ### generic process (cube ID & robot number & pause protocol)
-        SetSingleSteps_hexlist = self._generic_stepper_hexlist(SetSingleSteps_hexlist, cube_ID, pause) 
+        ### generic process (discovery group & cube ID & robot number & pause protocol)
+        SetSingleSteps_hexlist = self._generic_stepper_hexlist(SetSingleSteps_hexlist, cube_ID, discovery_group, pause) 
         ### set method (1: RelativeSingleSteps, 2: AbsoluteSingleSteps)
         #SetSingleSteps_hexlist[10] = method 
         ### convert & set speed
@@ -74,18 +87,16 @@ class StepperProtocol():
         ### set step value (0 to 65535, [2000 = 1 cycle])
         SetSingleSteps_hexlist[17:19] = Utils().int_to_hexlist(step, 2) 
         
-        if _option == None:
-            return serial.to_bytes(SetSingleSteps_hexlist)
-        elif _option == "hex":
-            return SetSingleSteps_hexlist
+        return serial.to_bytes(SetSingleSteps_hexlist)
 
-    def SetScheduledSteps_bytes(self, cube_ID, speed_seq_list, step_seq_list, pause=False, \
-            servo_angle_list=None, servo_angle_timeout_list=None, step_type=0, _option=None) -> bytes or list:
+
+    def SetScheduledSteps_bytes(self, cube_ID, speed_seq_list, step_seq_list, discovery_group=None, pause=False, \
+            step_type=0, servo_angle_list=None, servo_angle_timeout_list=None) -> bytes or list:
         ### FF FF FF 00 10 00 CA 00 0F 02 03 00 02 00 00 ~
         SetScheduledSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xCA, 0x00, 0x0F, 0x02, 0x03, 0x00, 0x02, 0x00, 0x00]
         
-        ### generic process (cube ID & robot number & pause protocol)
-        SetScheduledSteps_hexlist = self._generic_stepper_hexlist(SetScheduledSteps_hexlist, cube_ID, pause) 
+        ### generic process (discovery group & cube ID & robot number & pause protocol)
+        SetScheduledSteps_hexlist = self._generic_stepper_hexlist(SetScheduledSteps_hexlist, cube_ID, discovery_group, pause) 
         if step_type == 0: 
             ### set data size (stepper)
             SetScheduledSteps_hexlist[7:9] = Utils().int_to_hexlist(15 + 4*len(speed_seq_list), 2)
@@ -115,18 +126,16 @@ class StepperProtocol():
                 ### set servo timeout (1 to 255 sec, 0 for 21.845 min)
                 SetScheduledSteps_hexlist[20+6*i] = servo_angle_timeout_list[i] 
 
-        if _option == None:
-            return serial.to_bytes(SetScheduledSteps_hexlist)
-        elif _option == "hex":
-            return SetScheduledSteps_hexlist
+        return serial.to_bytes(SetScheduledSteps_hexlist)
 
-    def SetScheduledPoints_bytes(self, cube_ID, start_point_list, stop_point_list, repeats_list, pause=False, \
-            step_type=0, _option=None) -> bytes or list:
+
+    def SetScheduledPoints_bytes(self, cube_ID, start_point_list, stop_point_list, repeats_list, discovery_group=None, \
+            pause=False, step_type=0) -> bytes or list:
         ### FF FF FF 00 10 00 CB 00 0F 02 04 00 02 00 00 ~
         SetScheduledPoints_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xCB, 0x00, 0x0F, 0x02, 0x03, 0x00, 0x02, 0x00, 0x00]
         
         ### generic process (cube ID & robot number & pause protocol)
-        SetScheduledPoints_hexlist = self._generic_stepper_hexlist(SetScheduledPoints_hexlist, cube_ID, pause) 
+        SetScheduledPoints_hexlist = self._generic_stepper_hexlist(SetScheduledPoints_hexlist, cube_ID, discovery_group, pause) 
         ### set data size
         SetScheduledPoints_hexlist[7:9] = Utils().int_to_hexlist(15 + 5*len(start_point_list), 2) 
         ### step type (0: FullSteps, 4: SetServo)
@@ -140,19 +149,20 @@ class StepperProtocol():
             SetScheduledPoints_hexlist[17+5*i:19+5*i] = Utils().int_to_hexlist(stop_point_list[i], 2) 
             ### set repeat time of schedule
             SetScheduledPoints_hexlist[19+5*i] = repeats_list[i] 
-    
-        if _option == None:
-            return serial.to_bytes(SetScheduledPoints_hexlist)
-        elif _option == "hex":
-            return SetScheduledPoints_hexlist
+
+        return serial.to_bytes(SetScheduledPoints_hexlist)
+
 
     def SetAggregateSteps_bytes(self, discovery_group, *in_bytes) -> bytes:
         """step motor command to master robot"""
         ### AA AA 01 AA 10 00 CD 00 12 02 00 00 00 ~
         SetAggregateSteps_hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0x00, 0xCD, 0x00, 0x12, 0x02, 0x00, 0x00, 0x00]
 
-        ### set discovery group ID (1 to 8)(?)
-        SetAggregateSteps_hexlist[2] = discovery_group 
+        ### set discovery group ID (0 to 8)
+        if discovery_group == None:
+            SetAggregateSteps_hexlist[2] = 0xFF
+        else:
+            SetAggregateSteps_hexlist[3] = discovery_group
         ### set connection number
         SetAggregateSteps_hexlist[4] = self.connection_number*16 
         ### get total data size
@@ -174,13 +184,16 @@ class StepperProtocol():
         elif in_bytes[0][6] == 0xCB:
             ### Scheduled Points
             SetAggregateSteps_hexlist[10] = 4
+
+        SetAggregateSteps_hexlist = serial.to_bytes(SetAggregateSteps_hexlist)
         for i in range(in_bytes_length):
              ### attatch in_bytes
             SetAggregateSteps_hexlist = SetAggregateSteps_hexlist + in_bytes[i]
 
-        return serial.to_bytes(SetAggregateSteps_hexlist)
+        return SetAggregateSteps_hexlist
 
-    def SetPauseSteps_bytes(self, pause, cube_ID=None, agg=False, discovery_group=None) -> bytes:
+
+    def SetPauseSteps_bytes(self, pause, cube_ID=None, discovery_group=None, agg=False) -> bytes:
         if not agg:
             ### FF FF FF 00 10 00 C0 00 0A 02
             SetPauseSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC0, 0x00, 0x0A, 0x02]
@@ -213,7 +226,8 @@ class StepperProtocol():
                 SetPauseSteps_hexlist[9] = 2 
         return serial.to_bytes(SetPauseSteps_hexlist)
 
-    def SetInstantTorque(self, is_max_torque, cube_ID=None, agg=False, discovery_group=None):
+
+    def SetInstantTorque(self, is_max_torque, cube_ID=None, discovery_group=None, agg=False):
         # SPS > 700
         if not agg:
             ### FF FF FF 00 10 00 C0 00 0A 02

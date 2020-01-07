@@ -14,7 +14,7 @@ class PingPongThread(GenerateProtocol):
     is_start = False
     def __init__(self, number=1):
         if not PingPongThread.is_instance:
-            self.set_connection_number(number) # 연결할 로봇 대수
+            self._set_connection_number(number) # 연결할 로봇 대수
             PingPongThread.is_instance = True # 인스턴스 생성 확인
             GenerateProtocol.__init__(self, self.connection_number) # generate protocol init
             self.PORT = Utils().find_bluetooth_dongle(GenerateProtocol.DongleInAction_bytes(self)) # 동글 포트 찾기
@@ -56,6 +56,19 @@ class PingPongThread(GenerateProtocol):
         if not PingPongThread.is_start:
             raise ValueError("Thread did not start! Please start() before end the thread.")
 
+    # 연결 숫자 정하기
+    def _set_connection_number(self, number) -> None:
+        Utils().integer_check(number)
+        # no start check
+        if 1 <= number and number <= 8: # 1개 이상 8개 이하 
+            self.connection_number = number # 연결할 로봇 대수
+            try:
+                self.ReaderThreadInstance.connection_number = self.connection_number
+            except:
+                pass
+        else:
+            raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
+
     # 로봇 연결
     def _connect_robot_thread(self, port) -> None:
         if PingPongThread.is_instance:
@@ -75,7 +88,7 @@ class PingPongThread(GenerateProtocol):
             print("?")
             pass
 
-    def _write(self, protocol_bytes) -> None:
+    def write(self, protocol_bytes) -> None:
         try:
             self.ReaderThreadInstance.write(protocol_bytes)
         except:
@@ -85,7 +98,7 @@ class PingPongThread(GenerateProtocol):
     def disconnect_master_robot(self) -> None:
         self.start_check()
         if self.get_connected_robots_number() > 0:
-            self.ReaderThreadInstance.write(GenerateProtocol.PingPong_disconnect_bytes)
+            self.write(GenerateProtocol.PingPong_disconnect_bytes)
             print("Disconnect master robot.")
         else:
             print("Master robot is not connected.")
@@ -107,19 +120,7 @@ class PingPongThread(GenerateProtocol):
             pass
         time.sleep(1)
 
-    # 연결 숫자
-    def set_connection_number(self, number) -> None:
-        Utils().integer_check(number)
-        # no start check
-        if 1 <= number and number <= 8: # 1개 이상 8개 이하 
-            self.connection_number = number # 연결할 로봇 대수
-            try:
-                self.ReaderThreadInstance.connection_number = self.connection_number
-            except:
-                pass
-        else:
-            raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
-
+    # 모터 동작
     def run_motor(self, cube_ID, speed) -> None:
         self.start_check()
 
@@ -134,7 +135,7 @@ class PingPongThread(GenerateProtocol):
         Utils().float_check(speed)
         speed = GenerateProtocol.truncate_speed(self, speed) # truncate speed into -30 to 30 RPM
         
-        self._write(GenerateProtocol.SetContinuousSteps_bytes(self, cube_ID, speed))
+        self.write(GenerateProtocol.SetContinuousSteps_bytes(self, cube_ID, speed))
 
     '''
     def run_motor_aggregate(self, speed_list) -> None:
@@ -155,10 +156,18 @@ def main():
     PingPongThreadInstance.start()
     PingPongThreadInstance.wait_until_full_connect()
 
-    PingPongThreadInstance.run_motor('all', 30)
-    #PingPongThreadInstance._write(PingPongThreadInstance.SetSingleSteps_bytes(1, 20, 2000))
-    #PingPongThreadInstance._write(PingPongThreadInstance.SetScheduledSteps_bytes(1, [60, -20], [2000, 1000]))
-    #PingPongThreadInstance._write(PingPongThreadInstance.SetContinuousSteps_bytes(1, 20, pause=False))
+    #PingPongThreadInstance.run_motor('all', 30)
+    #PingPongThreadInstance.write(PingPongThreadInstance.SetSingleSteps_bytes(1, 20, 2000))
+    #PingPongThreadInstance.write(PingPongThreadInstance.SetScheduledSteps_bytes(1, [60, -20], [2000, 1000]))
+    #PingPongThreadInstance.write(PingPongThreadInstance.SetContinuousSteps_bytes(1, 20, pause=False))
+
+    input1 = PingPongThreadInstance.SetContinuousSteps_bytes(1, 20, pause=True)
+    input2 = PingPongThreadInstance.SetContinuousSteps_bytes(2, 30, pause=True)
+    input3 = PingPongThreadInstance.SetContinuousSteps_bytes(3, -30, pause=True)
+
+    PingPongThreadInstance.write(PingPongThreadInstance.SetAggregateSteps_bytes(1, input1, input2, input3))
+    time.sleep(5)
+    PingPongThreadInstance.write(PingPongThreadInstance.SetPauseSteps_bytes(False, 'all'))
 
     #PingPongThreadInstance.start()
 

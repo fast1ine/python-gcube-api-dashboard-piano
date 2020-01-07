@@ -138,8 +138,8 @@ class Utils():
     def input(self, string):
         Utils.input_flag = True
 
-    def print(self, string):
-        pass
+    def print(self, string, option=None):
+        print(string)
         
 
     
