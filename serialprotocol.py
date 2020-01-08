@@ -50,6 +50,7 @@ class ReaderThread(threading.Thread):
         self.protocol = None
         self.end_flag = False
         self.connection_number = 0
+        self.is_full_connect = False
 
     def stop(self) -> None:
         """Stop the reader thread"""
@@ -145,8 +146,8 @@ class ReaderThread(threading.Thread):
     def get_connected_robots_number(self) -> int:
         return self.protocol.connected_robots_number
 
-    def is_full_connect(self) -> bool:
-        return self.protocol.is_full_connect
+    #def is_full_connect(self) -> bool:
+    #    return self.protocol.is_full_connect
 
     def __enter__(self) -> Protocol:
         """\

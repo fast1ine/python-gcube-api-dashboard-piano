@@ -1,6 +1,7 @@
 from serialprotocol import Protocol
 from utils import Utils
 from processprotocol import ProcessProtocol
+from generateprotocol import GenerateProtocol
 import time
 
 # 프로토콜
@@ -20,6 +21,10 @@ class rawProtocol(Protocol, ProcessProtocol):
     def set_timeout(self, sec=1) -> None:
         self.timeout = sec
 
+    def set_full_connect(self, TF: bool) -> None:
+        self.transport.is_full_connect = TF
+        self.is_full_connect = TF
+
     # 연결 시작시 발생
     def connection_made(self, transport) -> None:
         self.transport = transport
@@ -29,7 +34,7 @@ class rawProtocol(Protocol, ProcessProtocol):
     # 연결 종료시 발생
     def connection_lost(self, exc) -> None:
         self.connected_robots_number = 0
-        self.is_full_connect = False
+        self.set_full_connect(False)
         try:
             self.transport.serial.close() # serial 연결 종료
         except:
@@ -64,10 +69,11 @@ class rawProtocol(Protocol, ProcessProtocol):
             self.init_buffer() # 버퍼 초기화
 
             if not self.is_full_connect and self.connected_robots_number == self.transport.connection_number:
-                self.is_full_connect = True
+                self.set_full_connect(True)
                 print("Fully connected.") # 모두 연결
             elif self.connected_robots_number != self.transport.connection_number:
-                self.is_full_connect = False
+                self.set_full_connect(False)
+                #self.transport.reconnect()
 
     # 데이터 보낼 때 함수
     def write(self, data) -> None:

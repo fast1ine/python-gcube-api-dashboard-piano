@@ -88,6 +88,7 @@ class PingPongThread(GenerateProtocol):
             print("?")
             pass
 
+    # 쓰기
     def write(self, protocol_bytes) -> None:
         try:
             self.ReaderThreadInstance.write(protocol_bytes)
@@ -111,7 +112,7 @@ class PingPongThread(GenerateProtocol):
     # 완전 연결 체크
     def is_full_connect(self) -> bool:
         self.start_check()
-        return self.ReaderThreadInstance.is_full_connect()
+        return self.ReaderThreadInstance.is_full_connect
 
     # 완전 연결까지 기다림
     def wait_until_full_connect(self) -> None:
@@ -120,8 +121,22 @@ class PingPongThread(GenerateProtocol):
             pass
         time.sleep(1)
 
+    # 한 번만 동작
+    _play_once_flag = True
+    def play_once(self):
+        if not self.is_full_connect():
+            PingPongThread._play_once_flag = True
+            return False
+        else:
+            if PingPongThread._play_once_flag:
+                PingPongThread._play_once_flag = False
+                time.sleep(1)
+                return True
+            else:
+                return False
+
     # 모터 동작
-    def run_motor(self, cube_ID, speed) -> None:
+    def run_motor(self, cube_ID: int, speed: float or int) -> None:
         self.start_check()
 
         if cube_ID != 'all':

@@ -125,7 +125,6 @@ class Utils():
             SPS = 0
         else:
             SPS = None
-        #RPM = SPS
         return SPS # -30 to 30
         
 
