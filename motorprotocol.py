@@ -1,7 +1,7 @@
 import serial
 from utils import Utils
 
-class StepperProtocol():
+class MotorProtocol():
     def __init__(self, connection_number):
         self.connection_number = connection_number
 
@@ -162,7 +162,7 @@ class StepperProtocol():
         if discovery_group == None:
             SetAggregateSteps_hexlist[2] = 0xFF
         else:
-            SetAggregateSteps_hexlist[3] = discovery_group
+            SetAggregateSteps_hexlist[2] = discovery_group
         ### set connection number
         SetAggregateSteps_hexlist[4] = self.connection_number*16 
         ### get total data size
@@ -197,11 +197,15 @@ class StepperProtocol():
         if not agg:
             ### FF FF FF 00 10 00 C0 00 0A 02
             SetPauseSteps_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC0, 0x00, 0x0A, 0x02]
-            if str(cube_ID).lower() == 'all':
-                cube_ID = 0xFF
-                SetPauseSteps_hexlist[3] = cube_ID
+            ### set discovery group
+            if discovery_group == None:
+                SetPauseSteps_hexlist[2] = 0xFF
             else:
-                ### set cube ID (1 to 8 -> 0 to 7)
+                SetPauseSteps_hexlist[2] = discovery_group
+            ### set cube ID (1 to 8 -> 0 to 7)
+            if str(cube_ID).lower() == 'all':
+                SetPauseSteps_hexlist[3] = 0xFF
+            else:
                 SetPauseSteps_hexlist[3] = int(cube_ID - 1) 
             ### set connection number
             SetPauseSteps_hexlist[4] = self.connection_number*16 
@@ -215,7 +219,11 @@ class StepperProtocol():
             ### aggregate mode
             ### AA AA 01 AA 10 00 C0 00 0A 02
             SetPauseSteps_hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0x00, 0xC0, 0x00, 0x0A, 0x02]
-            SetPauseSteps_hexlist[2] = discovery_group
+            ### set discovery group
+            if discovery_group == None:
+                SetPauseSteps_hexlist[2] = 0xFF
+            else:
+                SetPauseSteps_hexlist[2] = discovery_group
             ### set connection number
             SetPauseSteps_hexlist[4] = self.connection_number*16 
             if pause:
@@ -227,16 +235,20 @@ class StepperProtocol():
         return serial.to_bytes(SetPauseSteps_hexlist)
 
 
-    def SetInstantTorque(self, is_max_torque, cube_ID=None, discovery_group=None, agg=False):
+    def SetInstantTorque(self, is_max_torque, cube_ID=None, discovery_group=None, agg=False) -> bytes:
         # SPS > 700
         if not agg:
             ### FF FF FF 00 10 00 C0 00 0A 02
             SetInstantTorque_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC6, 0x00, 0x0A, 0x02]
-            if str(cube_ID).lower() == 'all':
-                cube_ID = 0xFF
-                SetInstantTorque_hexlist[3] = cube_ID
+            ### set discovery group
+            if discovery_group == None:
+                SetInstantTorque_hexlist[2] = 0xFF
             else:
-                ### set cube ID (1 to 8 -> 0 to 7)
+                SetInstantTorque_hexlist[2] = discovery_group
+            ### set cube ID (1 to 8 -> 0 to 7)
+            if str(cube_ID).lower() == 'all':
+                SetInstantTorque_hexlist[3] = 0xFF
+            else:
                 SetInstantTorque_hexlist[3] = int(cube_ID - 1) 
             ### set connection number
             SetInstantTorque_hexlist[4] = self.connection_number*16
@@ -246,11 +258,14 @@ class StepperProtocol():
             else:
                 ### default torque
                 SetInstantTorque_hexlist[9] = 0 
-        else: # aggregate mode
+        else: ### aggregate mode
             # AA AA 01 AA 10 00 C0 00 0A 02
             SetInstantTorque_hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0x00, 0xC6, 0x00, 0x0A, 0x02]
             ### set discovery group
-            SetInstantTorque_hexlist[2] = discovery_group
+            if discovery_group == None:
+                SetInstantTorque_hexlist[2] = 0xFF
+            else:
+                SetInstantTorque_hexlist[2] = discovery_group
             ### set connection number
             SetInstantTorque_hexlist[4] = self.connection_number*16 
             if is_max_torque:
@@ -260,3 +275,23 @@ class StepperProtocol():
                 ### default torque
                 SetInstantTorque_hexlist[9] = 0 
         return serial.to_bytes(SetInstantTorque_hexlist)
+
+
+    def SetSingleServo(self, cube_ID, servo_value, timeout, discovery_group=None):
+        SetSingleServo_hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x01]
+        ### set discovery group
+        if discovery_group == None:
+            SetSingleServo_hexlist[2] = 0xFF
+        else:
+            SetSingleServo_hexlist[2] = discovery_group
+        ### set cube ID (1 to 8 -> 0 to 7)
+        if str(cube_ID).lower() == 'all':
+            SetSingleServo_hexlist[3] = 0xFF
+        else:
+            SetSingleServo_hexlist[3] = int(cube_ID - 1) 
+        ### Method?
+        #SetSingleServo_hexlist[10]
+        ### set servo value (0 to 180 deg)
+        SetSingleServo_hexlist[11] = servo_value
+        ### set servo timeout (1 to 255 sec, 0 or 0xFF: 21.845 min ?)
+        SetSingleServo_hexlist[12] = timeout
