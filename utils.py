@@ -48,7 +48,6 @@ class Utils():
                     except:
                         pass
                     #print("something wrong")
-
             if not_found_flag == False:
                 print("Device not found. Please connect the BluetoothUSB, or shut down other port connected program.")
                 not_found_flag = True

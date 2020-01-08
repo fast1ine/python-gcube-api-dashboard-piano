@@ -1,8 +1,9 @@
 import serial
 from motorprotocol import MotorProtocol
+from musicprotocol import MusicProtocol
 from utils import Utils
 
-class GenerateProtocol(MotorProtocol):
+class GenerateProtocol(MotorProtocol, MusicProtocol):
     #FF FF FF FF 00 00 A8 00 0A 01
     PingPong_disconnect_hexlist = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xA8, 0x00, 0x0A, 0x01]
     PingPong_disconnect_bytes = serial.to_bytes(PingPong_disconnect_hexlist)
@@ -11,6 +12,7 @@ class GenerateProtocol(MotorProtocol):
         self.connection_number = connection_number
         self.current_speed_list = [0]*self.connection_number
         MotorProtocol.__init__(self, self.connection_number)
+        MusicProtocol.__init__(self, self.connection_number)
 
     def DongleInAction_bytes(self) -> bytes:
         #DD DD DD DD 00 01 DA 00 0B 00 0D
