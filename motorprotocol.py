@@ -57,6 +57,10 @@ class MotorProtocol():
         return Utils().int_to_hexlist(unsigned_speed, n)
 
 
+    def _register_schedule(self):
+        pass
+
+
     def RPM_to_SPS(self, RPM) -> float:
         if 3 <= RPM and RPM <= 30:
             SPS = 50*(-60/RPM+22)

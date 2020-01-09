@@ -14,6 +14,9 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
         MotorProtocol.__init__(self, self.connection_number)
         MusicProtocol.__init__(self, self.connection_number)
 
+    def _process_cube_ID(self, cube_ID):
+        pass
+
     def DongleInAction_bytes(self) -> bytes:
         #DD DD DD DD 00 01 DA 00 0B 00 0D
         DongleInAction_hexlist = [0xDD, 0xDD, 0xDD, 0xDD, 0x00, 0x01, 0xDA, 0x00, 0x0B, 0x00, 0x0D]
@@ -94,4 +97,6 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
                 discovery_group=discovery_group, pause=pause)
 
             
-    
+    def play_motor_schedule_bytes(self, cube_ID, start_point_list, stop_point_list, repeats_list, discovery_group=None, \
+            pause=False, step_type=0):
+        pass
