@@ -38,11 +38,11 @@ class ProcessProtocol():
         elif self.buffer[9] == int(0xC0):
             if self.connected_robots_number > 0:
                 print("Disconnected with a master robot. Sleep 2 seconds.") # 로봇 연결 해제    
-                self.transport.serial.close() # 시리얼 닫음
-                time.sleep(2) # sleep 2 seconds
-                self.transport.reconnect() # 재연결
             else:
-                print("Already disconnected.")
+                print("Disconnected with previous connection. Sleep 2 seconds.")
+            self.transport.serial.close() # 시리얼 닫음 (transport의 close 함수는 사용하면 작동이 안 됨.)
+            time.sleep(2) # sleep 2 seconds
+            self.transport.reconnect() # 재연결
             return 0
         else:
             return self._unregistered()

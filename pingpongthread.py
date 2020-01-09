@@ -81,7 +81,7 @@ class PingPongThread(GenerateProtocol):
                     self.PORT = Utils().find_bluetooth_dongle(GenerateProtocol.DongleInAction_bytes(self))
             self.ReaderThreadInstance = ReaderThread(ser, rawProtocol)
             self.ReaderThreadInstance.connection_number = self.connection_number
-            self.ReaderThreadInstance.write(GenerateProtocol.PingPongGn_connect_bytes(self, self.connection_number))
+            self.ReaderThreadInstance.write(GenerateProtocol.PingPongGn_connect_bytes(self))
         else:
             #raise ValueError("No instance of PingpongThread! Please construct instance first.")
             # cannot reach
@@ -107,12 +107,15 @@ class PingPongThread(GenerateProtocol):
     # 로봇 연결 대수 체크
     def get_connected_robots_number(self) -> int:
         self.start_check()
-        return self.ReaderThreadInstance.get_connected_robots_number()
+        return self.ReaderThreadInstance.connected_robots_number
 
     # 완전 연결 체크
     def is_full_connect(self) -> bool:
         self.start_check()
-        return self.ReaderThreadInstance.is_full_connect
+        is_full_connect_flag = self.ReaderThreadInstance.is_full_connect
+        if not is_full_connect_flag:
+            PingPongThread._play_once_flag = True # play_once용
+        return is_full_connect_flag
 
     # 완전 연결까지 기다림
     def wait_until_full_connect(self) -> None:
@@ -125,10 +128,12 @@ class PingPongThread(GenerateProtocol):
     _play_once_flag = True
     def play_once(self):
         if not self.is_full_connect():
-            PingPongThread._play_once_flag = True
+            #print("full")
+            #PingPongThread._play_once_flag = True
             return False
         else:
             if PingPongThread._play_once_flag:
+                #print("flag1")
                 PingPongThread._play_once_flag = False
                 time.sleep(1)
                 return True

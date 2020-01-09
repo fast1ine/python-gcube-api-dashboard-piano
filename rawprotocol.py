@@ -21,9 +21,13 @@ class rawProtocol(Protocol, ProcessProtocol):
     def set_timeout(self, sec=1) -> None:
         self.timeout = sec
 
+    # 완전 연결 설정
     def set_full_connect(self, TF: bool) -> None:
-        self.transport.is_full_connect = TF
-        self.is_full_connect = TF
+        self.transport.is_full_connect = self.is_full_connect = TF
+
+    # 로봇 연결 수 설정
+    def set_connected_robots_number(self, number: int) -> None:
+        self.transport.connected_robots_number = self.connected_robots_number = number
 
     # 연결 시작시 발생
     def connection_made(self, transport) -> None:
@@ -33,7 +37,7 @@ class rawProtocol(Protocol, ProcessProtocol):
 
     # 연결 종료시 발생
     def connection_lost(self, exc) -> None:
-        self.connected_robots_number = 0
+        self.set_connected_robots_number(0)
         self.set_full_connect(False)
         try:
             self.transport.serial.close() # serial 연결 종료
@@ -61,19 +65,29 @@ class rawProtocol(Protocol, ProcessProtocol):
         
         if len(self.buffer) == self.buffer_size: # 버퍼 얻음
             print("Buffer:", Utils().bytes_to_hex_str(self.buffer))  
-            self.connected_robots_number = self.process_data(self.buffer, 
+            robots_number = self.process_data(self.buffer, 
                                                              self.buffer_size, 
                                                              self.transport, 
                                                              self.connected_robots_number,
                                                              self.transport.connection_number) # 데이터 처리 및 명령
+            self.set_connected_robots_number(robots_number)
             self.init_buffer() # 버퍼 초기화
 
             if not self.is_full_connect and self.connected_robots_number == self.transport.connection_number:
-                self.set_full_connect(True)
                 print("Fully connected.") # 모두 연결
+                self.set_full_connect(True)
             elif self.connected_robots_number != self.transport.connection_number:
-                self.set_full_connect(False)
-                #self.transport.reconnect()
+                if self.is_full_connect:
+                    print("Slave robot disconnected after full connection. Close all connection.") # 모두 연결 이후에 슬레이브 로봇 연결이 끊어지면 다시 연결이 안됨.
+                    self.set_full_connect(False)
+                    self.set_connected_robots_number(0)
+                    self.transport.serial.close()
+                    self.transport.reconnect()
+                    #time.sleep(1)
+                    #self.write(GenerateProtocol(self.transport.connection_number).PingPongGn_connect_bytes())
+                else:    
+                    self.set_full_connect(False)
+
 
     # 데이터 보낼 때 함수
     def write(self, data) -> None:

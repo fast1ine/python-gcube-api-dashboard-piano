@@ -49,8 +49,9 @@ class ReaderThread(threading.Thread):
         self._connection_made = threading.Event()
         self.protocol = None
         self.end_flag = False
-        self.connection_number = 0
+        self.connection_number = 0 # full connection number
         self.is_full_connect = False
+        self.connected_robots_number = 0
 
     def stop(self) -> None:
         """Stop the reader thread"""
@@ -138,13 +139,13 @@ class ReaderThread(threading.Thread):
         try:
             PORT = Utils().find_bluetooth_dongle(GenerateProtocol().DongleInAction_bytes())
             self.serial = Utils().connect_serial_URL(PORT)
-            self.write(GenerateProtocol().PingPongGn_connect_bytes(self.connection_number))
+            self.write(GenerateProtocol(self.connection_number).PingPongGn_connect_bytes())
             self.alive = True
         except Exception as error:
             self.protocol.connection_lost(error)
 
-    def get_connected_robots_number(self) -> int:
-        return self.protocol.connected_robots_number
+    #def get_connected_robots_number(self) -> int:
+    #    return self.protocol.connected_robots_number
 
     #def is_full_connect(self) -> bool:
     #    return self.protocol.is_full_connect

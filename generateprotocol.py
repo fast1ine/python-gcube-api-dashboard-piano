@@ -19,8 +19,8 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
         DongleInAction_hexlist = [0xDD, 0xDD, 0xDD, 0xDD, 0x00, 0x01, 0xDA, 0x00, 0x0B, 0x00, 0x0D]
         return serial.to_bytes(DongleInAction_hexlist)
 
-    def PingPongGn_connect_bytes(self, number) -> bytes:
-        if number == 1: # 1개
+    def PingPongGn_connect_bytes(self) -> bytes:
+        if self.connection_number == 1: # 1개
             #DD DD 00 00 00 00 DA 00 0B 00 00
             PingPongG1_connect_hexlist = [0xDD, 0xDD, 0x00, 0x00, 0x00, 0x00, 0xDA, 0x00, 0x0B, 0x00, 0x00]
             return serial.to_bytes(PingPongG1_connect_hexlist)
