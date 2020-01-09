@@ -76,15 +76,13 @@ class rawProtocol(Protocol, ProcessProtocol):
             if not self.is_full_connect and self.connected_robots_number == self.transport.connection_number:
                 print("Fully connected.") # 모두 연결
                 self.set_full_connect(True)
-            elif self.connected_robots_number != self.transport.connection_number:
-                if self.is_full_connect:
-                    print("Slave robot disconnected after full connection. Close all connection.") # 모두 연결 이후에 슬레이브 로봇 연결이 끊어지면 다시 연결이 안됨.
+            elif self.connected_robots_number != self.transport.connection_number: # 전부 연결되지 않았을 때
+                if self.is_full_connect: # 이전에 전부 연결되었다면
+                    print("Robot disconnected after full connection. Close all connection.") # 모두 연결 이후에 슬레이브 로봇 연결이 끊어지면 다시 연결이 안됨.
                     self.set_full_connect(False)
                     self.set_connected_robots_number(0)
-                    self.transport.serial.close()
+                    self.transport.serial.close() # 시리얼 닫음 (transport의 close 함수는 사용하면 작동이 안 됨.)
                     self.transport.reconnect()
-                    #time.sleep(1)
-                    #self.write(GenerateProtocol(self.transport.connection_number).PingPongGn_connect_bytes())
                 else:    
                     self.set_full_connect(False)
 

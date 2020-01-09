@@ -89,7 +89,7 @@ class PingPongThread(GenerateProtocol):
             pass
 
     # 쓰기
-    def write(self, protocol_bytes) -> None:
+    def _write(self, protocol_bytes) -> None:
         try:
             self.ReaderThreadInstance.write(protocol_bytes)
         except:
@@ -99,7 +99,7 @@ class PingPongThread(GenerateProtocol):
     def disconnect_master_robot(self) -> None:
         self.start_check()
         if self.get_connected_robots_number() > 0:
-            self.write(GenerateProtocol.PingPong_disconnect_bytes)
+            self._write(GenerateProtocol.PingPong_disconnect_bytes)
             print("Disconnect master robot.")
         else:
             print("Master robot is not connected.")
@@ -141,21 +141,28 @@ class PingPongThread(GenerateProtocol):
                 return False
 
     # 모터 동작
-    def run_motor(self, cube_ID: int, speed: float or int) -> None:
+    def run_motor(self, cube_ID: int, speed: (float or int or str)) -> None:
         self.start_check()
 
-        if cube_ID != 'all':
-            Utils().integer_check(cube_ID, 'all')
-            cube_ID = float(cube_ID) # float으로 변환
+        if str(cube_ID).lower() == "all":
+            cube_ID = 0xFF
+        else:
+            Utils().integer_check(cube_ID, "all") # 정수 체크
+            cube_ID = int(cube_ID)
             if not (1 <= cube_ID and cube_ID <= 8):
                 raise ValueError("Cube ID must be between 1 to 8.")
             elif cube_ID > self.connection_number:
                 raise ValueError("Cube ID must be less or equal to connection number.")
 
-        Utils().float_check(speed)
-        speed = GenerateProtocol.truncate_speed(self, speed) # truncate speed into -30 to 30 RPM
-        
-        self.write(GenerateProtocol.SetContinuousSteps_bytes(self, cube_ID, speed))
+        if str(speed).lower() == "stop":
+            speed = 0
+        else:
+            Utils().float_check(speed) # float 체크
+            speed = GenerateProtocol.truncate_speed(self, speed) # speed 자르기
+        if speed == 0:
+            print("Stop motor(s).")
+
+        self._write(GenerateProtocol.SetContinuousSteps_bytes(self, cube_ID, speed))
 
     '''
     def run_motor_aggregate(self, speed_list) -> None:
@@ -185,9 +192,9 @@ def main():
     input2 = PingPongThreadInstance.SetContinuousSteps_bytes(2, 30, pause=True)
     input3 = PingPongThreadInstance.SetContinuousSteps_bytes(3, -30, pause=True)
 
-    PingPongThreadInstance.write(PingPongThreadInstance.SetAggregateSteps_bytes(1, input1, input2, input3))
+    PingPongThreadInstance._write(PingPongThreadInstance.SetAggregateSteps_bytes(1, input1, input2, input3))
     time.sleep(5)
-    PingPongThreadInstance.write(PingPongThreadInstance.SetPauseSteps_bytes(False, 'all'))
+    PingPongThreadInstance._write(PingPongThreadInstance.SetPauseSteps_bytes(False, 'all'))
 
     #PingPongThreadInstance.start()
 

@@ -16,11 +16,13 @@ class MotorProtocol():
     
 
     def _set_cube_ID(self, hexlist, cube_ID):
-        ### set cube ID (1 to 8 -> 0 to 7)
-        if str(cube_ID).lower() == 'all':
-            hexlist[3] = 0xFF
+        ### set cube ID 
+        if cube_ID == 0xFF: 
+            ### all cubes
+            hexlist[3] = cube_ID
         else:
-            hexlist[3] = int(cube_ID - 1) 
+            ### ID: 1 to 8 -> 0 to 7
+            hexlist[3] = cube_ID - 1
         return hexlist
 
 
