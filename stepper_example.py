@@ -12,3 +12,4 @@ while not keyboard.is_pressed("q"): # q가 눌리기 전까지 쓰레드 유지
 
 PingPongThreadInstance.run_motor("all", "stop") # 모터 끔
 PingPongThreadInstance.end() # 쓰레드 종료
+

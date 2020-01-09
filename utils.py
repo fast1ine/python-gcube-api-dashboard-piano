@@ -60,37 +60,46 @@ class Utils():
             return None
 
     # 실수 체크
-    def float_check(self, number) -> None:
-        try:
-            number = list(number)
-        except:
-            number = [number]
-            
+    def list_float_check(self, number) -> None:
         for i in range(len(number)):
             try: 
                 float(number[i])
             except:
+                raise ValueError("Please enter float number or list!")
+    def float_check(self, number, option=None) -> None:
+        if not (isinstance(number, int) or isinstance(number, float)):
+            is_float = False
+        else:
+            is_float = True
+        if not is_float:
+            if option:
+                raise ValueError("Please enter float number, or '" + str(option) + "'!")
+            else:
                 raise ValueError("Please enter float number!")
 
     #  정수 체크
-    def integer_check(self, number, option=None) -> None:
-        self.float_check(number)
-        try:
-            number = list(number)
-        except:
-            number = [number]
-
+    def list_integer_check(self, number, option=None) -> None:
+        self.list_float_check(number)
         for i in range(len(number)):
             if not float(number[i]).is_integer():
                 is_integer = False
             else:
                 is_integer = True
-
             if not is_integer:
                 if option:
-                    raise ValueError("Please enter integer number, or '" + str(option) + "'!")
+                    raise ValueError("Please enter integer number or list, or '" + str(option) + "'!")
                 else:
-                    raise ValueError("Please enter integer number!")
+                    raise ValueError("Please enter integer number or list!")
+    def integer_check(self, number, option=None) -> None:
+        if not isinstance(number, int):
+            is_integer = False
+        else:
+            is_integer = True
+        if not is_integer:
+            if option:
+                raise ValueError("Please enter integer number, or '" + str(option) + "'!")
+            else:
+                raise ValueError("Please enter integer number!")
 
     # unsigned16 으로 변환
     def unsigned16(self, n) -> int:
@@ -115,20 +124,14 @@ class Utils():
             #hex_list_str =  [hex_number[-2*(i+1):-2*i]] + hex_list_str
         #print(hex_list_str)
         return hex_list
-
-    def RPM_to_SPS(self, RPM) -> float:
-        if 3 <= RPM and RPM <= 30:
-            SPS = 50*(-60/RPM+22)
-        elif -30 <= RPM and RPM <= -3:
-            SPS = 50*(-60/RPM-22)
-        elif RPM == 0:
-            SPS = 0
-        else:
-            SPS = None
-        return SPS # -30 to 30
         
-
-
+    def to_list(self, input_data) -> list:
+        if isinstance(input_data, list) or isinstance(input_data, tuple):
+            return list(input_data)
+        elif isinstance(input_data, int) or isinstance(input_data, float) or isinstance(input_data, str) or input_data == None:
+            return [input_data]
+        else:
+            raise ValueError("Error. Enter list, or tuple, or int, or float, or str.")
 
 
     input_flag = False

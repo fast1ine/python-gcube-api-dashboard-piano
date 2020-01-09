@@ -17,12 +17,7 @@ class MotorProtocol():
 
     def _set_cube_ID(self, hexlist, cube_ID):
         ### set cube ID 
-        if cube_ID == 0xFF: 
-            ### all cubes
-            hexlist[3] = cube_ID
-        else:
-            ### ID: 1 to 8 -> 0 to 7
-            hexlist[3] = cube_ID - 1
+        hexlist[3] = cube_ID
         return hexlist
 
 
@@ -56,10 +51,27 @@ class MotorProtocol():
         return hexlist
 
 
-    def _RPM_to_hexlist(self, speed, n) -> list:
-        """convert RPM to SPS in unsigned 16 hex list with n bytes"""
-        unsigned_speed = Utils().unsigned16(round(Utils().RPM_to_SPS(speed)))
+    def _SPS_to_hexlist(self, speed: int, n: int) -> list:
+        """convert SPS to unsigned 16 hex list with n bytes"""
+        unsigned_speed = Utils().unsigned16(speed)
         return Utils().int_to_hexlist(unsigned_speed, n)
+
+
+    def RPM_to_SPS(self, RPM) -> float:
+        if 3 <= RPM and RPM <= 30:
+            SPS = 50*(-60/RPM+22)
+        elif -30 <= RPM and RPM <= -3:
+            SPS = 50*(-60/RPM-22)
+        elif RPM == 0:
+            SPS = 0
+        else:
+            SPS = None
+        return SPS # -30 to 30
+
+
+    def cycle_to_step(self, cycle) -> float:
+        step = cycle*2000
+        return step
 
 
     def truncate_speed(self, speed) -> int or float:
@@ -78,8 +90,19 @@ class MotorProtocol():
         return speed
 
 
+    def truncate_step(self, step) -> int or float:
+        """truncate step between 0 to 32.7675 cycle"""
+        if step < 0:
+            step = 0
+            print("Warning. Minimum step cycle is 0.")
+        elif step > 32.7675:
+            step = 32.7675
+            print("Warning. Maximum step cycle is 32.7675.")
+        return step
+
+
     def make_dummy(self, in_bytes) -> bytes:
-        ### make OP code into 0
+        """make OP code into 0"""
         in_bytes_list = list(in_bytes)
         in_bytes_list[6] = 0
         return serial.to_bytes(in_bytes_list)
@@ -94,7 +117,7 @@ class MotorProtocol():
         ### Set mode multirole 
         #hexlist[9] 
         ### convert & set speed
-        hexlist[13:15] = self._RPM_to_hexlist(speed, 2) 
+        hexlist[13:15] = self._SPS_to_hexlist(round(speed), 2) 
         return serial.to_bytes(hexlist)
 
 
@@ -107,11 +130,11 @@ class MotorProtocol():
         ### set method (1: RelativeSingleSteps, 2: AbsoluteSingleSteps)
         #hexlist[10] = method 
         ### convert & set speed
-        hexlist[13:15] = self._RPM_to_hexlist(speed, 2) 
+        hexlist[13:15] = self._SPS_to_hexlist(round(speed), 2) 
         ### set start phase
         #hexlist[15:17] = [0, 0] 
         ### set step value (0 to 65535, [2000 = 1 cycle])
-        hexlist[17:19] = Utils().int_to_hexlist(step, 2) 
+        hexlist[17:19] = Utils().int_to_hexlist(round(step), 2) 
         return serial.to_bytes(hexlist)
 
 
@@ -136,16 +159,16 @@ class MotorProtocol():
             ### Full Step mode
             for i in range(len(speed_seq_list)):
                 ### set speed schedule
-                hexlist.extend(self._RPM_to_hexlist(speed_seq_list[i], 2))
+                hexlist.extend(self._SPS_to_hexlist(round(speed_seq_list[i]), 2))
                 ### set step schedule (if speed = 0, sleep [step] ms.)
-                hexlist.extend(Utils().int_to_hexlist(step_seq_list[i], 2))
+                hexlist.extend(Utils().int_to_hexlist(round(step_seq_list[i]), 2))
         elif step_type == 4: 
             ### Servo mode
             for i in range(len(speed_seq_list)):
                 ### set speed schedule
-                hexlist.extend(self._RPM_to_hexlist(speed_seq_list[i], 2))
+                hexlist.extend(self._SPS_to_hexlist(round(speed_seq_list[i]), 2))
                 ### set step schedule
-                hexlist.extend(Utils().int_to_hexlist(step_seq_list[i], 2))
+                hexlist.extend(Utils().int_to_hexlist(round(step_seq_list[i]), 2))
                 ### set servo angle (0 to 180 deg)
                 hexlist.append(servo_angle_list[i])
                 ### set servo timeout (1 to 255 sec, 0 for 21.845 min)
@@ -216,7 +239,7 @@ class MotorProtocol():
             hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC0, 0x00, 0x0A, 0x02]
             ### set discovery group
             hexlist = self._set_discovery_group(hexlist, discovery_group)
-            ### set cube ID (1 to 8 -> 0 to 7)
+            ### set cube ID 
             hexlist = self._set_cube_ID(hexlist, cube_ID)
             ### set connection number
             hexlist = self._set_connection_number_motor(hexlist)

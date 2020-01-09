@@ -43,7 +43,7 @@ class ProcessProtocol():
                 self.transport.serial.close() # 시리얼 닫음 (transport의 close 함수는 사용하면 작동이 안 됨.)
                 time.sleep(2) # sleep 2 seconds
                 self.transport.reconnect() # 재연결
-            return 0
+            return 0 # 마스터가 끊기면 전부 끊긴 것.
         else:
             return self._unregistered()
     
