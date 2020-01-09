@@ -131,7 +131,7 @@ class Utils():
         elif isinstance(input_data, int) or isinstance(input_data, float) or isinstance(input_data, str) or input_data == None:
             return [input_data]
         else:
-            raise ValueError("Error. Enter list, or tuple, or int, or float, or str.")
+            raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or None.")
 
 
     input_flag = False

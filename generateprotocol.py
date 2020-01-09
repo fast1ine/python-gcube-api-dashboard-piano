@@ -29,7 +29,69 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
             PingPongGn_connect_hexlist = [0xFF, 0xFF, 0x00, 0xFF, 0x20, 0x00, 0xAD, 0x00, 0x0B, 0x0A, 0x00] 
             PingPongGn_connect_hexlist[4] = self.connection_number*16 # connection number
             return serial.to_bytes(PingPongGn_connect_hexlist)
-            
+    
+
+    def run_motor_bytes(self, cube_ID, speed, step_cycle=None, pause=False, discovery_group=None, option="continue") -> bytes:
+        """큐브 1개 작동"""
+        speed = Utils().to_list(speed)
+        step_cycle = Utils().to_list(step_cycle)
+
+        ### 에러 처리
+        if not isinstance(option, str):
+             raise ValueError("Option must be str.")
+        elif option.lower() == "continue":
+            if not (len(speed) == 1):
+                raise ValueError("In Continue mode, speed must have 1 element.")
+        elif option.lower() == "step":
+            if not (len(speed) == len(step_cycle) == 1):
+                raise ValueError("In Step mode, speed and step_cycle must have 1 element.")
+        elif option.lower() == "schedule":
+            if not (len(speed) == len(step_cycle)):
+                raise ValueError("In Schedule mode, speed and step must have same length.")
+        else:
+            raise ValueError("Unknown option.")
+        
+        ### 큐브 ID 처리
+        if str(cube_ID).lower() == "all":
+            cube_ID = 0xFF
+        else:
+            Utils().integer_check(cube_ID, "all") # 정수 체크
+            cube_ID = int(cube_ID) # 정수로 변환 
+            if not (1 <= cube_ID and cube_ID <= 8):
+                raise ValueError("Cube ID must be between 1 to 8.")
+            elif cube_ID > self.connection_number:
+                raise ValueError("Cube ID must be less or equal to connection number.")
+            cube_ID -= 1 # (1 to 8 -> 0 to 7)
+
+        ### 속도 처리
+        for i in range(len(speed)):
+            if str(speed[i]).lower() == "stop":
+                speed[i] = 0
+            else:
+                Utils().float_check(speed[i], "stop")
+                speed[i] = MotorProtocol.truncate_speed(self, speed[i]) # speed 자르기
+                speed[i] = MotorProtocol.RPM_to_SPS(self, speed[i]) # 단위를 RPM에서 SPS로 변경
+        
+        ### 스텝 처리 (speed=0이면, [step_cycle*2]초만큼 쉼.)
+        step = [0]*len(step_cycle)
+        if option == "step" or option == "schedule":
+            for i in range(len(step_cycle)):
+                Utils().float_check(step_cycle[i], "stop")
+                step_cycle[i] = MotorProtocol.truncate_step(self, step_cycle[i]) # step 자르기
+                step[i] = MotorProtocol.cycle_to_step(self, step_cycle[i]) # 단위를 cycle에서 step으로 변경
+
+        ## 작동 (pause, discovery_group 처리 해야함)
+        if option.lower() == "continue":
+            if speed[0] == 0:
+                print("Stop motor(s).")
+            return MotorProtocol.SetContinuousSteps_bytes(self, cube_ID, speed[0], \
+                discovery_group=discovery_group, pause=pause)
+        elif option.lower() == "step":
+            return MotorProtocol.SetSingleSteps_bytes(self, cube_ID, speed[0], step[0], \
+                discovery_group=discovery_group, pause=pause)
+        elif option.lower() == "schedule":
+            return MotorProtocol.SetScheduledSteps_bytes(self, cube_ID, speed, step, \
+                discovery_group=discovery_group, pause=pause)
 
             
     

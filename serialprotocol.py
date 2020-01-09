@@ -113,10 +113,12 @@ class ReaderThread(threading.Thread):
     def close(self) -> None:
         """Close the serial port and exit reader thread (uses lock)"""
         # use the lock to let other threads finish writing
-        with self._lock:
-            # first stop reading, so that closing can be done on idle port
-            self.end_flag = True
-            self.stop()
+        try:
+            with self._lock:
+                # first stop reading, so that closing can be done on idle port
+                self.end_flag = True
+                self.stop()
+        finally:
             self.serial.close()
             
     def connect(self) -> None:
