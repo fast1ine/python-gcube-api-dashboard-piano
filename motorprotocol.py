@@ -180,8 +180,8 @@ class MotorProtocol():
         return serial.to_bytes(hexlist)
 
 
-    def SetScheduledPoints_bytes(self, cube_ID, start_point_list, stop_point_list, repeats_list, discovery_group=None, \
-            pause=False, step_type=0) -> bytes or list:
+    def SetScheduledPoints_bytes(self, cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group=None, \
+            pause=False, step_type=0) -> bytes:
         ### FF FF FF 00 10 00 CB 00 0F 02 04 00 02 00 00 ~
         hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xCB, 0x00, 0x0F, 0x02, 0x03, 0x00, 0x02, 0x00, 0x00]
         
@@ -199,7 +199,7 @@ class MotorProtocol():
             ### set stop point of schedule
             hexlist.extend(Utils().int_to_hexlist(stop_point_list[i], 2))
             ### set repeat time of schedule
-            hexlist.append(repeats_list[i])
+            hexlist.append(repeat_list[i])
         return serial.to_bytes(hexlist)
 
 

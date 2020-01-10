@@ -97,7 +97,7 @@ class PingPongThread(GenerateProtocol):
             self.ReaderThreadInstance.write(protocol_bytes)
         except:
             print("Cannot write.")
-            
+
     # 로봇 연결 해제
     def disconnect_master_robot(self) -> None:
         self._start_check()
@@ -105,6 +105,7 @@ class PingPongThread(GenerateProtocol):
             self.ReaderThreadInstance.set_robot_disconnect_flag(True)
             self._write(self.PingPong_disconnect_bytes)
             print("Disconnect master robot.")
+            # 1개는 해제 응답을 안 받음. 2개 이상은 해제 응답을 받음.
         else:
             print("Master robot is not connected.")
 
@@ -155,14 +156,21 @@ class PingPongThread(GenerateProtocol):
     def run_motor(self, cube_ID, speed, step_cycle=None, pause=False, discovery_group=None, option="continue") -> None:
         self._start_check()
         self._write(self.run_motor_bytes(cube_ID, speed, step_cycle, pause, discovery_group, option))
+        time.sleep(0.2)
 
-    def set_motor_schedule(self, cube_ID, speed, step_cycle, pause=True, discovery_group=None) -> None:
+    # 스케줄 설정
+    def set_motor_schedule(self, cube_ID, speed_list, step_cycle_list, pause=True, discovery_group=None) -> None:
         self._start_check()
-        self._write(self.run_motor_bytes(cube_ID, speed, step_cycle, pause, discovery_group, "schedule"))
+        self._write(self.run_motor_bytes(cube_ID, speed_list, step_cycle_list, pause, discovery_group, "schedule"))
+        time.sleep(0.2)
 
-    def play_motor_schedule(self) -> None:
+    # 스케줄 실행
+    def play_motor_schedule(self, cube_ID, repeat_list=1, start_point_list=0, stop_point_list=None, discovery_group=None, \
+            pause=False) -> None:
         self._start_check()
-        pass
+        self._write(self.play_motor_schedule_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group, \
+            pause))
+        time.sleep(0.2)
 
     def pause_motor(self) -> None:
         pass
@@ -202,7 +210,7 @@ def main():
 
     PingPongThreadInstance._write(PingPongThreadInstance.SetAggregateSteps_bytes(1, input1, input2, input3, input4, input5)) ### 안됨
     time.sleep(5)
-    PingPongThreadInstance._write(PingPongThreadInstance.SetPauseSteps_bytes(False, 0xFF))
+    #PingPongThreadInstance._write(PingPongThreadInstance.SetPauseSteps_bytes(False, 0xFF))
 
     #PingPongThreadInstance.start()
 
