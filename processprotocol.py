@@ -6,14 +6,13 @@ class ProcessProtocol():
 
     def process_data(self, 
             buffer, 
-            buffer_size, 
             transport, 
             connected_robots_number,
             connection_number) -> (bool, int):
         """return: robot connection, connected robots number"""
 
         self.buffer = buffer
-        self.buffer_size = buffer_size
+        self.buffer_size = len(buffer)
         self.transport = transport
         self.connected_robots_number = connected_robots_number
         self.connection_number = connection_number

@@ -1,5 +1,4 @@
 from pingpongthread import PingPongThread
-import time
 import keyboard # keyboard==0.13.4
 
 PingPongThreadInstance = PingPongThread(number=1) # n개 로봇 연결

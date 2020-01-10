@@ -1,0 +1,8 @@
+from pingpongthread import PingPongThread
+import time
+import keyboard # keyboard==0.13.4
+
+PingPongThreadInstance = PingPongThread(number=1) # n개 로봇 연결
+PingPongThreadInstance.start() # 쓰레드 시작
+PingPongThreadInstance.wait_until_full_connect() # 전부 연결될 때까지 기다림
+

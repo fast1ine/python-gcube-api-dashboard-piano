@@ -1,5 +1,4 @@
 from pingpongthread import PingPongThread
-import time
 import keyboard # keyboard==0.13.4
 
 PingPongThreadInstance = PingPongThread(number=1) # n개 로봇 연결
@@ -11,6 +10,5 @@ while not keyboard.is_pressed("q"): # q가 눌리기 전까지 쓰레드 유지
         PingPongThreadInstance.run_motor("all", 30) # 모터 돌림
 
 PingPongThreadInstance.run_motor("all", "stop") # 모터 끔
-##disconnect
 PingPongThreadInstance.end() # 쓰레드 종료
 

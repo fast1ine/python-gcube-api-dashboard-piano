@@ -152,6 +152,9 @@ class ReaderThread(threading.Thread):
     #def is_full_connect(self) -> bool:
     #    return self.protocol.is_full_connect
 
+    def set_robot_disconnect_flag(self, TF: bool) -> None:
+        self.protocol.robot_disconnect_flag = TF
+
     def __enter__(self) -> Protocol:
         """\
         Enter context handler. May raise RuntimeError in case the connection
