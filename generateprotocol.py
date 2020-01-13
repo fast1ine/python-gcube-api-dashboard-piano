@@ -103,7 +103,7 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
 
         ### 일시정지 처리
         if not isinstance(pause, bool):
-            raise ValueError("Pause must be boolean value.")
+            raise ValueError("pause must be boolean value.")
 
         ### 작동 (discovery_group 처리 해야함)
         if option.lower() == "continue":
@@ -133,8 +133,8 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
         if not len(start_point_list) == len(stop_point_list) == len(repeat_list):
             raise ValueError("Start, stop, repeats list length are must be the same.")
         for i in range(len(start_point_list)):
-            if stop_point_list[i] == None and len(start_point_list) == 1:
-                stop_point_list[i] = list(map(len, self.speed_schedule_list))[cube_ID_idx]-1 # None이면 제일 뒤에 인덱스
+            if isinstance(stop_point_list[i], str) and stop_point_list[i].lower() == "end":
+                stop_point_list[i] = list(map(len, self.speed_schedule_list))[cube_ID_idx]-1 # end이면 제일 뒤에 인덱스
             Utils().integer_check(start_point_list[i])
             Utils().integer_check(stop_point_list[i])
             Utils().integer_check(repeat_list[i])
@@ -147,3 +147,25 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
 
         ### (discovery_group, step_type 처리해야 함)
         return self.SetScheduledPoints_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group, pause, 0)
+
+    def pause_motor_bytes(self, pause, cube_ID=None, discovery_group=None, group_mode=False):
+        ### 오류 처리
+        if not isinstance(group_mode, bool):
+            raise ValueError("group_mode must be boolean value.")
+        elif not isinstance(pause, bool):
+            raise ValueError("pause must be boolean value.")
+
+        ### 그룹 모드 오류 처리
+        if group_mode:
+            if discovery_group == None:
+                raise ValueError("In group mode, discovery_group must not be None.")
+            else:
+                Utils().integer_check(discovery_group)
+        else:
+            if cube_ID == None:
+                raise ValueError("Not in group mode, cube_ID must not be None.")
+            else:
+                cube_ID = self._process_cube_ID(cube_ID)
+
+        ### (discovery_group 처리해야 함)
+        return self.SetPauseSteps_bytes(pause, cube_ID, discovery_group, group_mode)

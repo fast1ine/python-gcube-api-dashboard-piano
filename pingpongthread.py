@@ -163,20 +163,27 @@ class PingPongThread(GenerateProtocol):
         self._start_check()
         self._write(self.run_motor_bytes(cube_ID, speed_list, step_cycle_list, pause, discovery_group, "schedule"))
         time.sleep(0.2)
+         ## 2개 했을때 버퍼 오는지 확인
 
     # 스케줄 실행
-    def play_motor_schedule(self, cube_ID, repeat_list=1, start_point_list=0, stop_point_list=None, discovery_group=None, \
+    def play_motor_schedule(self, cube_ID, repeat_list=1, start_point_list=0, stop_point_list="end", discovery_group=None, \
             pause=False) -> None:
         self._start_check()
         self._write(self.play_motor_schedule_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group, \
             pause))
         time.sleep(0.2)
 
-    def pause_motor(self) -> None:
-        pass
+    # 모터 일시정지
+    def pause_motor(self, cube_ID=None, discovery_group=None, group_mode=False) -> None:
+        self._start_check()
+        self._write(self.pause_motor_bytes(True, cube_ID=None, discovery_group=None, group_mode=False))
+        time.sleep(0.2)
 
-    def play_motor(self) -> None:
-        pass
+    # 모터 재생
+    def play_motor(self, cube_ID=None, discovery_group=None, group_mode=False) -> None:
+        self._start_check()
+        self._write(self.pause_motor_bytes(False, cube_ID, discovery_group, group_mode))
+        time.sleep(0.2)
 
     '''
     def run_motor_aggregate(self, speed_list) -> None:

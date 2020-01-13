@@ -11,89 +11,79 @@ class rawProtocol(Protocol, ProcessProtocol):
         self.set_timeout()
         self.connected_robots_number = 0 # 연결된 로봇 개수
         self.is_full_connect = False
-        self.disconnect_flag = False
+        self.robot_disconnect_flag = False
+        ProcessProtocol.__init__(self)
 
     # 버퍼 초기화
     def init_buffer(self) -> None:
         self.buffer = b""
-        self.buffer_size = 8096
+        self.buffer_size = 0
+        ProcessProtocol.set_buffer(self, b"")
+
+    def add_buffer(self, data):
+        self.buffer += data
+        ProcessProtocol.set_buffer(self, self.buffer)
     
     # 타임아웃 시간 정하기
     def set_timeout(self, sec=1) -> None:
         self.timeout = sec
 
-    # 완전 연결 설정
-    def set_full_connect(self, TF: bool) -> None:
-        self.transport.is_full_connect = self.is_full_connect = TF
-
     # 로봇 연결 수 설정
     def set_connected_robots_number(self, number: int) -> None:
-        self.transport.connected_robots_number = self.connected_robots_number = number
+        self.transport.connected_robots_number = self.connected_robots_number = number # transport에도 설정
+        ProcessProtocol.set_connected_robots_number(self, number)
+        
+    # 모두 연결 설정
+    def set_is_full_connect(self, TF: bool) -> None:
+        self.transport.is_full_connect = self.is_full_connect = TF # transport에도 설정
+        ProcessProtocol.set_is_full_connect(self, TF)
 
-    # 연결 평가
-    def evaluate_connection(self) -> None:
-        if not self.is_full_connect and self.connected_robots_number == self.transport.connection_number: # 모두 연결
-            print("Fully connected.") 
-            self.set_full_connect(True)
-        elif self.connected_robots_number != self.transport.connection_number and not self.disconnect_flag: # 전부 연결되지 않았을 때 & disconnect가 아닐 때
-            if self.is_full_connect: # 이전에 전부 연결되었다면
-                print("Robot disconnected after full connection. Close all connection.") # 모두 연결 이후에 슬레이브 로봇 연결이 끊어지면 다시 연결이 안됨.
-                self.set_full_connect(False)
-                self.set_connected_robots_number(0)
-                self.transport.serial.close() # 시리얼 닫음 (transport의 close 함수를 사용하면 작동이 안 됨.)
-                self.transport.reconnect()
-            else:    
-                self.set_full_connect(False)
-        elif self.connected_robots_number != self.transport.connection_number and self.disconnect_flag: # 전부 연결되지 않았을 때 & disconnect일 때
-            # 시리얼 안 닫음.
-            print("Disconnect master robot.")
-            self.set_full_connect(False)
-            self.set_connected_robots_number(0)
-            self.disconnect_flag = False
+    # 로봇 연결 해제 설정
+    def set_robot_disconnect_flag(self, TF: bool) -> None:
+        self.robot_disconnect_flag = TF
+        ProcessProtocol.set_robot_disconnect_flag(self, TF)
 
     # 연결 시작시 발생
     def connection_made(self, transport) -> None:
         self.transport = transport
+        ProcessProtocol.set_transport(self, transport)
         self.running = True
         print("Serial connected.")
 
     # 연결 종료시 발생
     def connection_lost(self, exc) -> None:
         self.set_connected_robots_number(0)
-        self.set_full_connect(False)
+        self.set_is_full_connect(False)
         try:
             self.transport.serial.close() # serial 연결 종료
         except:
             pass
         print("Serial disconnected. Sleep 3 seconds.")
+        #raise exc
         time.sleep(3)
 
     #데이터가 들어오면 이곳에서 처리함.
     def data_received(self, data) -> None:
         if self.buffer == b"":
             self.previous_time = time.time()
-        else:
-            if time.time()-self.previous_time > self.timeout: # 타임아웃
-                print("p",self.previous_time)
-                print("t",time.time())
-                self.init_buffer()
-                print("Timeout. Initialize buffer.")
-
-        self.buffer += data
-        if len(self.buffer) == 9 and self.buffer[7] == 0: # 버퍼 사이즈 계산
-            self.buffer_size = self.buffer[8]
-        elif len(self.buffer) == 9 and self.buffer[7] != 0:
-            print("Error. buffer[7]:", self.buffer[7])
+        elif time.time()-self.previous_time > self.timeout: # 타임아웃
+            print("Timeout. Initialize buffer.")
+            print("Timeout buffer:", Utils().bytes_to_hex_str(self.buffer))
+            self.init_buffer()
+            self.previous_time = time.time()
+            
+        self.add_buffer(data) # 버퍼 받기
+        if len(self.buffer) == 9: # 버퍼 사이즈 계산
+            self.buffer_size = int(hex(self.buffer[7])[2:] + hex(self.buffer[8])[2:], 16)
         
         if len(self.buffer) == self.buffer_size: # 버퍼 얻음
             print("Buffer:", Utils().bytes_to_hex_str(self.buffer))  
-            robots_number = self.process_data(self.buffer, 
-                                            self.transport, 
-                                            self.connected_robots_number,
-                                            self.transport.connection_number) # 데이터 처리 및 명령
-            self.set_connected_robots_number(robots_number)
+            self.set_connected_robots_number(self.process_data()) # 데이터 처리 및 명령
             self.init_buffer() # 버퍼 초기화
-            self.evaluate_connection() # 연결 평가
+            fu, co, di = self.evaluate_connection() # 연결 평가
+            self.set_is_full_connect(fu)
+            self.set_connected_robots_number(co) 
+            self.set_robot_disconnect_flag(di) 
             
     # 데이터 보낼 때 함수
     def write(self, data) -> None:

@@ -153,7 +153,7 @@ class ReaderThread(threading.Thread):
     #    return self.protocol.is_full_connect
 
     def set_robot_disconnect_flag(self, TF: bool) -> None:
-        self.protocol.robot_disconnect_flag = TF
+        self.protocol.set_robot_disconnect_flag(TF)
 
     def __enter__(self) -> Protocol:
         """\

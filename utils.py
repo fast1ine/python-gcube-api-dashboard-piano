@@ -107,22 +107,14 @@ class Utils():
 
     # integer를 n 바이트 헥스 리스트로 변환
     def int_to_hexlist(self, number, n_bytes) -> list:
-        hex_number = hex(number)[2:]
-        if len(hex_number)%(2*n_bytes) == 0:
-            pass
-        else:
-            hex_number = "0"*(2*n_bytes-len(hex_number)%(2*n_bytes)) + hex_number
-        
-        #print(hex_number)
+        hex_number = hex(number)[2:] # str
+        if len(hex_number)%(2*n_bytes) != 0:
+            hex_number = "0"*(2*n_bytes-len(hex_number)%(2*n_bytes)) + hex_number 
         if len(hex_number) > 2*n_bytes:
             raise ValueError("n_bytes is smaller than integer to hex.")
-
         hex_list = [int(hex_number[-2:], 16)]
-        #hex_list_str = [hex_number[-2:]]
         for i in range(1, n_bytes):
             hex_list =  [int(hex_number[-2*(i+1):-2*i], 16)] + hex_list
-            #hex_list_str =  [hex_number[-2*(i+1):-2*i]] + hex_list_str
-        #print(hex_list_str)
         return hex_list
         
     def to_list(self, input_data) -> list:
