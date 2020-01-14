@@ -7,22 +7,22 @@ import time
 # 프로토콜
 class rawProtocol(Protocol, ProcessProtocol):
     def __init__(self):
+        ProcessProtocol.__init__(self)
         self.init_buffer()
         self.set_timeout()
         self.connected_robots_number = 0 # 연결된 로봇 개수
         self.is_full_connect = False
         self.robot_disconnect_flag = False
-        ProcessProtocol.__init__(self)
+        self.is_schedule_set = False
+        self.is_point_set = False
 
     # 버퍼 초기화
     def init_buffer(self) -> None:
         self.buffer = b""
         self.buffer_size = 0
-        ProcessProtocol.set_buffer(self, b"")
 
     def add_buffer(self, data):
         self.buffer += data
-        ProcessProtocol.set_buffer(self, self.buffer)
     
     # 타임아웃 시간 정하기
     def set_timeout(self, sec=1) -> None:
@@ -31,22 +31,26 @@ class rawProtocol(Protocol, ProcessProtocol):
     # 로봇 연결 수 설정
     def set_connected_robots_number(self, number: int) -> None:
         self.transport.connected_robots_number = self.connected_robots_number = number # transport에도 설정
-        ProcessProtocol.set_connected_robots_number(self, number)
         
     # 모두 연결 설정
     def set_is_full_connect(self, TF: bool) -> None:
         self.transport.is_full_connect = self.is_full_connect = TF # transport에도 설정
-        ProcessProtocol.set_is_full_connect(self, TF)
 
     # 로봇 연결 해제 설정
     def set_robot_disconnect_flag(self, TF: bool) -> None:
         self.robot_disconnect_flag = TF
-        ProcessProtocol.set_robot_disconnect_flag(self, TF)
+
+    # 스케줄 확인 설정
+    def set_is_schedule_set(self, TF: bool) -> None:
+        self.transport.is_schedule_set = self.is_schedule_set = TF # transport에도 설정
+
+    # 스케줄 확인 설정
+    def set_is_point_set(self, TF: bool) -> None:
+        self.transport.is_point_set = self.is_point_set = TF # transport에도 설정
 
     # 연결 시작시 발생
     def connection_made(self, transport) -> None:
-        self.transport = transport
-        ProcessProtocol.set_transport(self, transport)
+        self.transport = transport # transport 설정
         self.running = True
         print("Serial connected.")
 
@@ -74,11 +78,18 @@ class rawProtocol(Protocol, ProcessProtocol):
             
         self.add_buffer(data) # 버퍼 받기
         if len(self.buffer) == 9: # 버퍼 사이즈 계산
-            self.buffer_size = int(hex(self.buffer[7])[2:] + hex(self.buffer[8])[2:], 16)
+            self.buffer_size = Utils().twobyte_hexlist_to_int(self.buffer[7], self.buffer[8])
         
         if len(self.buffer) == self.buffer_size: # 버퍼 얻음
             print("Buffer:", Utils().bytes_to_hex_str(self.buffer))  
-            self.set_connected_robots_number(self.process_data()) # 데이터 처리 및 명령
+            processed_dict = self.process_data() # 데이터 처리 및 명령
+            if "robot_number" in processed_dict.keys(): # 로봇 숫자 처리
+                self.set_connected_robots_number(processed_dict["robot_number"]) 
+            if "schedule_set" in processed_dict.keys(): # 스케줄 설정 처리
+                self.set_is_schedule_set(processed_dict["schedule_set"]) # False 언제 됨 ?????????????????????????????????????????
+            if "point_set" in processed_dict.keys(): # 포인트 설정 처리
+                self.set_is_point_set(processed_dict["point_set"]) # False 언제 됨 ?????????????????????????????????????????
+
             self.init_buffer() # 버퍼 초기화
             fu, co, di = self.evaluate_connection() # 연결 평가
             self.set_is_full_connect(fu)
@@ -89,7 +100,6 @@ class rawProtocol(Protocol, ProcessProtocol):
     def write(self, data) -> None:
         if self.running:
             self.transport.write(data)
-            #print("Write data:", Utils().bytes_to_hex_str(data))
         else:
             print("Not running.")
         

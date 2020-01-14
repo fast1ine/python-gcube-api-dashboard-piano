@@ -50,6 +50,7 @@ class Utils():
                     #print("something wrong")
             if not_found_flag == False:
                 print("Device not found. Please connect the BluetoothUSB, or shut down other port connected program.")
+                print("Reconnecting serial...")
                 not_found_flag = True
 
     def connect_serial_URL(self, port) -> serial:
@@ -116,6 +117,9 @@ class Utils():
         for i in range(1, n_bytes):
             hex_list =  [int(hex_number[-2*(i+1):-2*i], 16)] + hex_list
         return hex_list
+
+    def twobyte_hexlist_to_int(self, byte1, byte2) -> int:
+        return int(hex(byte1)[2:] + hex(byte2)[2:], 16)
         
     def to_list(self, input_data) -> list:
         if isinstance(input_data, list) or isinstance(input_data, tuple):

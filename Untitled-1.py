@@ -1,27 +1,45 @@
-class AXAX():
-    somebool = True
+class Person(object):
+    def __init__(self):
+        self.name = "{} {}".format("First","Last")
+        self.A = "bbbbb"
+        self.D = ""
 
-    def some_generator(self):
-        yield AXAX.somebool
-        AXAX.somebool = False
+    def B(self):
+        return self.A
+    
+    def G(self):
+        return self.D
+    
+    def E(self):
+        self.A = "fffff"
+        return "EEEEEEEEE"
 
-    def get_generator(self):
-        for i in self.some_generator():
-            j = i
-        return j
+class Employee(Person):
+    def __init__(self):
+        Person.__init__(self)
+        self.A = "eeee"
 
-A = AXAX()
-print(A.get_generator())
-print(A.get_generator())
-print(A.get_generator())
+    def E(self):
+        Person.E(self)
+        return "HHHHHHH"
+
+    def introduce(self):
+        print("Hi! My name is {}".format(self.name))
+        print(self.A)
+        print(Person.B(self))
+        self.A = "ccccc"
+        print(self.A)
+        print(Person.B(self))
+        self.D = "ddddd"
+        print(self.D)
+        print(Person.G(self))
+        self.E()
+        print(self.A)
+        print(Person.E(self))
+        print(self.E())
+        #Person.E = self.E
+        #print(Person.E())
 
 
-
-
-
-#for i in A.some_generator():
-#    print(i)
-#for i in A.some_generator():
-#    print(i)
-#for i in A.some_generator():
-#    print(i)
+e = Employee()
+e.introduce()

@@ -143,7 +143,7 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
                 or len(self.speed_schedule_list[cube_ID_idx])-1 < stop_point_list[i]:
                 raise ValueError("Unavailable number. Schedule does not have that index.")
             elif repeat_list[i] < 0 or 255 < repeat_list[i]:
-                raise ValueError("Unavailable number. Repeat must be positive, or smaller than 255.")
+                raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
 
         ### (discovery_group, step_type 처리해야 함)
         return self.SetScheduledPoints_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group, pause, 0)
