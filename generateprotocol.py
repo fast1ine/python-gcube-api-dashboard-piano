@@ -27,6 +27,38 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
                 raise ValueError("Cube ID must be less or equal to connection number.")
             cube_ID -= 1 # (1 to 8 -> 0 to 7)
         return cube_ID
+    
+    def _check_start_and_stop_list(self, start_and_stop_list) -> (list, list) or (int, int):
+        # Ex)
+        # [[1, 2], [3, 4]]
+        # [1, 2]
+        # [[1, 2], [3, 4], [5, 6]]
+        # [2, [2, 3], 3, [4, 5]]
+        start = []
+        stop = []
+        if isinstance(start_and_stop_list, list) or isinstance(start_and_stop_list, tuple):
+            for i in range(len(start_and_stop_list)):
+                if isinstance(start_and_stop_list[i], list) or isinstance(start_and_stop_list[i], tuple):
+                    if len(start_and_stop_list[i]) != 2:
+                        raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must be 2-length list (or tuple).")
+                    elif not isinstance(start_and_stop_list[i][0], int) or not isinstance(start_and_stop_list[i][1], int):
+                        #print(start_and_stop_list[0], start_and_stop_list[1])
+                        raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must have integer elements.")
+                    else:
+                        start.append(start_and_stop_list[i][0])
+                        stop.append(start_and_stop_list[i][1])
+                elif isinstance(start_and_stop_list[i], int):
+                    start.append(start_and_stop_list[i])
+                    stop.append(start_and_stop_list[i])
+                else:
+                    raise ValueError("start_and_stop_list must have list or int elements.")
+            return start, stop
+        elif isinstance(start_and_stop_list, int):
+            start = start_and_stop_list
+            stop = start_and_stop_list
+            return start, stop
+        else:
+            raise ValueError("start_and_stop_list must be list (or tuple), or int.")
 
     def DongleInAction_bytes(self) -> bytes:
         #DD DD DD DD 00 01 DA 00 0B 00 0D
@@ -71,7 +103,7 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
         ### 속도 처리
         sleep_list = [False]*len(speed)
         for i in range(len(speed)):
-            if (str(speed[i]).lower() in ["stop", "sleep"]) or speed[i] == 0:
+            if (str(speed[i]).lower() in ["stop", "sleep"]) or speed[i] == 0: # 스피드가 0이면 sleep 모드
                 speed[i] = 0
                 sleep_list[i] = True # i번째는 sleep 모드
             else:
@@ -80,7 +112,7 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
                 speed[i] = round(self.RPM_to_SPS(speed[i])) # 단위를 RPM에서 SPS로 변경, 반올림 int화
         ### 속도 스케줄 저장
         if cube_ID != 0xFF:
-            self.speed_schedule_list[cube_ID] = speed
+            self.speed_schedule_list[cube_ID] = speed ##################################### status 넣기
         else:
             for i in range(len(self.speed_schedule_list)):
                 self.speed_schedule_list[i] = speed
@@ -128,9 +160,23 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
             cube_ID_idx = 0
         else:
             cube_ID_idx = cube_ID
-        
+
+        # 반복 처리 (리스트 원소가 1개면 전체 반복 모드)
+        if len(repeat_list) == 1 and not len(start_point_list) == 1 and not len(stop_point_list) == 1:
+            if repeat_list[0] < 0 or 255 < repeat_list[0]:
+                raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
+            print("Entire repeat mode is on. In this mode, the repeat index is not appeared properly.")
+            start_point_list = start_point_list*repeat_list[0]
+            stop_point_list = stop_point_list*repeat_list[0]
+            repeat_list = [1]*len(start_point_list)
+
+        # 스케줄 체크
+        if self.speed_schedule_list[cube_ID_idx] == []:
+            raise ValueError("Schedule is not set. Set schedule first before play.")
+
         ### 길이 처리
         if not len(start_point_list) == len(stop_point_list) == len(repeat_list):
+            print(len(start_point_list), len(stop_point_list), len(repeat_list))
             raise ValueError("Start, stop, repeats list length are must be the same.")
         for i in range(len(start_point_list)):
             if isinstance(stop_point_list[i], str) and stop_point_list[i].lower() == "end":
@@ -142,6 +188,8 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
                 or len(self.speed_schedule_list[cube_ID_idx])-1 < start_point_list[i] \
                 or len(self.speed_schedule_list[cube_ID_idx])-1 < stop_point_list[i]:
                 raise ValueError("Unavailable number. Schedule does not have that index.")
+            elif stop_point_list[i] < start_point_list[i]:
+                raise ValueError("Start index must be less than or equal to stop index.")
             elif repeat_list[i] < 0 or 255 < repeat_list[i]:
                 raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
 
@@ -169,3 +217,6 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
 
         ### (discovery_group 처리해야 함)
         return self.SetPauseSteps_bytes(pause, cube_ID, discovery_group, group_mode)
+
+    def sync_motor_bytes(self, cube_ID_list):
+        pass

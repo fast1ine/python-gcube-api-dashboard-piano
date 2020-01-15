@@ -20,6 +20,7 @@ class PingPongThread(GenerateProtocol, ReaderThread):
             PingPongThread._is_instance = True # 인스턴스 생성 확인
             self.PORT = Utils().find_bluetooth_dongle(self.DongleInAction_bytes()) # 동글 포트 찾기
             self._play_once_flag = True
+            self._init_controller_status()
         else:
             raise ValueError("PingpongThread instance cannot be constructed above 1.")
 
@@ -30,25 +31,6 @@ class PingPongThread(GenerateProtocol, ReaderThread):
         except:
             pass
 
-    # 쓰레드 시작
-    def start(self) -> None:
-        if not PingPongThread._is_start:
-            PingPongThread._is_start = True
-            self._connect_robot_thread()
-            ReaderThread.start(self)
-        else:
-            raise ValueError("PingPongThread instance cannot start above 1.")
-
-    # 쓰레드 종료
-    def end(self) -> None:
-        self._start_check()
-        self.disconnect_master_robot()
-        self.close()
-        print("End thread.")
-        PingPongThread._is_start = False
-
-        ## end flag -> serial 보수 ########################
-
     # 시작 체크
     def _start_check(self):
         if not PingPongThread._is_start:
@@ -57,9 +39,10 @@ class PingPongThread(GenerateProtocol, ReaderThread):
     # 연결 숫자 정하기
     def _set_connection_number(self, number) -> None:
         Utils().integer_check(number)
-        # no start check
+        # No start check
         if 1 <= number and number <= 8: # 1개 이상 8개 이하 
             self._connection_number = number # 연결할 로봇 대수
+            self._controller_status["connection_number"] = number
         else:
             raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
 
@@ -83,6 +66,40 @@ class PingPongThread(GenerateProtocol, ReaderThread):
         except:
             print("Cannot write.")
 
+    def _init_controller_status(self) -> None:
+        self._controller_status = \
+            {
+                "connection_number": 0,
+                "connected_number": 0,
+                "stepper_status": {}
+            }
+        self._controller_status["stepper_status"] = \
+            {
+                "stepper_mode": [],
+                "stepper_speed_schedule": [],
+                "stepper_step_schedule": [],
+                "stepper_point_schedule": []
+            }
+
+    # 쓰레드 시작
+    def start(self) -> None:
+        if not PingPongThread._is_start:
+            PingPongThread._is_start = True
+            self._connect_robot_thread()
+            ReaderThread.start(self)
+        else:
+            raise ValueError("PingPongThread instance cannot start above 1.")
+
+    # 쓰레드 종료
+    def end(self) -> None:
+        self._start_check()
+        self.disconnect_master_robot()
+        self.close()
+        print("End thread.")
+        PingPongThread._is_start = False
+
+        ## end flag -> serial 보수 ########################
+    
     # 로봇 연결 해제
     def disconnect_master_robot(self) -> None:
         self._start_check()
@@ -101,9 +118,12 @@ class PingPongThread(GenerateProtocol, ReaderThread):
         self._write(self.PingPongGn_connect_bytes())
 
     def get_is_start(self) -> bool:
-        return PingPongThread._is_start
+        return PingPongThread._is_start # copy?
+        
+    def get_controller_status(self) -> dict:
+        return self._controller_status.copy()
 
-    # 완전 연결 체크
+    # 완전 연결 체크 (deprecated)
     def get_is_full_connect(self) -> bool:
         self._start_check()
         is_full_connect_flag = self.is_full_connect
@@ -138,76 +158,116 @@ class PingPongThread(GenerateProtocol, ReaderThread):
             raise ValueError("option must be str.")
         if not isinstance(pause, bool):
             raise ValueError("pause must be bool.")
-        if option.lower() == "schedule" and self.connection_number > 1: # 1이면 반응이 안 옴
-            if not pause:
-                self._write(self.run_motor_bytes(cube_ID, speed, step_cycle, True, discovery_group, option)) # pause
-                while not self.is_schedule_set: # 스케줄 완료가 되면 실행
-                    pass
+        cube_ID = Utils().to_list(cube_ID)
+        for i in range(len(cube_ID)):
+            if isinstance(cube_ID[i], str):
+                if len(cube_ID) != 1:
+                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
+                elif cube_ID[i].lower() != "all": 
+                    # len(cube_ID) == 1
+                    raise ValueError("cube_ID must be int, or list, or 'all'.")
+            if option.lower() == "schedule" and self.connection_number > 1: # 1이면 반응이 안 옴 (다시다시다시다시, 나머지도)
+                self._write(self.run_motor_bytes(cube_ID[i], speed, step_cycle, True, discovery_group, option)) # pause
+                #while not self.is_schedule_set: # 스케줄 완료가 되면 실행
+                #    pass
                 time.sleep(0.2)
-                self._write(self.pause_motor_bytes(False, cube_ID, discovery_group, False)) # play motor
+                if not pause:
+                    self._write(self.pause_motor_bytes(False, cube_ID[i], discovery_group, False)) # play motor
             else:
-                self._write(self.run_motor_bytes(cube_ID, speed, step_cycle, pause, discovery_group, option))
-        else:
-            self._write(self.run_motor_bytes(cube_ID, speed, step_cycle, pause, discovery_group, option))
-        time.sleep(0.2)
+                self._write(self.run_motor_bytes(cube_ID[i], speed, step_cycle, pause, discovery_group, option))
+            time.sleep(0.2)
 
     # 스케줄 설정
     def set_motor_schedule(self, cube_ID, speed_list, step_cycle_list, pause=True, discovery_group=None) -> None:
         self._start_check()
         if not isinstance(pause, bool):
             raise ValueError("pause must be bool.")
-        if self.connection_number > 1: # 1이면 반응이 안 옴
-            if not pause:
-                self._write(self.run_motor_bytes(cube_ID, speed_list, step_cycle_list, True, discovery_group, "schedule")) # pause
-                while not self.is_schedule_set: # 스케줄 완료가 되면 실행
-                    pass
+        cube_ID = Utils().to_list(cube_ID)
+        for i in range(len(cube_ID)):
+            if isinstance(cube_ID[i], str):
+                if len(cube_ID) != 1:
+                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
+                elif cube_ID[i].lower() != "all": 
+                    # len(cube_ID) == 1
+                    raise ValueError("cube_ID must be int, or list, or 'all'.")
+            if self.connection_number > 1: # 1이면 반응이 안 옴
+                self._write(self.run_motor_bytes(cube_ID[i], speed_list, step_cycle_list, True, discovery_group, "schedule")) # pause
+                #while not self.is_schedule_set: # 스케줄 완료가 되면 실행 ####### 다시
+                #    pass
                 time.sleep(0.2)
-                self._write(self.pause_motor_bytes(False, cube_ID, discovery_group, False)) # play motor
+                if not pause:
+                    self._write(self.pause_motor_bytes(False, cube_ID[i], discovery_group, False)) # play motor
             else:
-                self._write(self.run_motor_bytes(cube_ID, speed_list, step_cycle_list, pause, discovery_group, "schedule"))
-        else:
-            self._write(self.run_motor_bytes(cube_ID, speed_list, step_cycle_list, pause, discovery_group, "schedule"))
-        time.sleep(0.2)
+                self._write(self.run_motor_bytes(cube_ID[i], speed_list, step_cycle_list, pause, discovery_group, "schedule"))
+            time.sleep(0.2)
 
     # 스케줄 실행
-    def play_motor_schedule(self, cube_ID, repeat_list=1, start_point_list=0, stop_point_list="end", 
+    def play_motor_schedule(self, cube_ID, repeat_list=1, start_point_list=None, stop_point_list=None, 
         start_and_stop_list=None, discovery_group=None, pause=False) -> None:
         self._start_check()
+        # 스케줄 체크는 play_motor_schedule_bytes 안에서 함
         if not isinstance(pause, bool):
             raise ValueError("pause must be bool.")
-        if start_and_stop_list:
-            if not isinstance(pause, list): #####만드는중
-                pass
-
-
-
-        if self.connection_number > 1: # 1이면 반응이 안 옴
-            if not pause:
-                self._write(self.play_motor_schedule_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, \
-                    discovery_group, True)) # pause
-                while not self.is_point_set: # 포인트 완료가 되면 실행
-                    pass
-                time.sleep(0.2)
-                self._write(self.pause_motor_bytes(False, cube_ID, discovery_group, False)) # play motor
+        if start_point_list == None and stop_point_list == None: # 스타트, 스탑 포인트 체크
+            if start_and_stop_list != None:
+                start_point_list, stop_point_list = self._check_start_and_stop_list(start_and_stop_list)
             else:
-                self._write(self.play_motor_schedule_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, \
+                start_point_list, stop_point_list = 0, "end"
+        elif start_and_stop_list != None:
+            print("Warning. start_point_list and stop_point_list are ignored. start_and_stop_list is accepted.")
+            start_point_list, stop_point_list = self._check_start_and_stop_list(start_and_stop_list)
+        elif start_point_list == None:
+            start_point_list = 0
+        elif stop_point_list == None:
+            stop_point_list = "end"
+        
+        cube_ID = Utils().to_list(cube_ID)
+        for i in range(len(cube_ID)):
+            if isinstance(cube_ID[i], str):
+                if len(cube_ID) != 1:
+                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
+                elif cube_ID[i].lower() != "all": 
+                    # len(cube_ID) == 1
+                    raise ValueError("cube_ID must be int, or list, or 'all'.")
+            if self.connection_number > 1: # 1이면 반응이 안 옴
+                self._write(self.play_motor_schedule_bytes(cube_ID[i], start_point_list, stop_point_list, repeat_list, \
+                    discovery_group, True)) # pause
+                #while not self.is_point_set: # 포인트 완료가 되면 실행
+                #    pass
+                time.sleep(0.2)
+                if not pause: # pause가 안 되어 있으면 play
+                    self._write(self.pause_motor_bytes(False, cube_ID[i], discovery_group, False)) # play motor
+            else:
+                self._write(self.play_motor_schedule_bytes(cube_ID[i], start_point_list, stop_point_list, repeat_list, \
                     discovery_group, pause)) 
-        else:
-            self._write(self.play_motor_schedule_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, \
-                discovery_group, pause)) 
-        time.sleep(0.2)
+            time.sleep(0.2)
 
     # 모터 일시정지
     def pause_motor(self, cube_ID=None, discovery_group=None, group_mode=False) -> None:
         self._start_check()
-        self._write(self.pause_motor_bytes(True, cube_ID, discovery_group, group_mode))
-        time.sleep(0.2)
+        cube_ID = Utils().to_list(cube_ID)
+        for i in range(len(cube_ID)):
+            if isinstance(cube_ID[i], str):
+                if len(cube_ID) != 1:
+                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
+                elif cube_ID[i].lower() != "all": 
+                    # len(cube_ID) == 1
+                    raise ValueError("cube_ID must be int, or list, or 'all'.")
+            self._write(self.pause_motor_bytes(True, cube_ID[i], discovery_group, group_mode))
+            time.sleep(0.2)
 
     # 모터 재생
     def play_motor(self, cube_ID=None, discovery_group=None, group_mode=False) -> None:
         self._start_check()
-        self._write(self.pause_motor_bytes(False, cube_ID, discovery_group, group_mode))
-        time.sleep(0.2)
+        for i in range(len(cube_ID)):
+            if isinstance(cube_ID[i], str):
+                if len(cube_ID) != 1:
+                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
+                elif cube_ID[i].lower() != "all": 
+                    # len(cube_ID) == 1
+                    raise ValueError("cube_ID must be int, or list, or 'all'.")
+            self._write(self.pause_motor_bytes(False, cube_ID[i], discovery_group, group_mode))
+            time.sleep(0.2)
 
     '''
     def run_motor_aggregate(self, speed_list) -> None:

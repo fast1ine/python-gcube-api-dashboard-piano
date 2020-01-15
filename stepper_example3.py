@@ -1,11 +1,11 @@
 from pingpongthread import PingPongThread
 import keyboard # keyboard==0.13.4
 
-PingPongThreadInstance = PingPongThread(number=1) # n개 로봇 연결
+PingPongThreadInstance = PingPongThread(number=2) # n개 로봇 연결
 PingPongThreadInstance.start() # 쓰레드 시작
 PingPongThreadInstance.wait_until_full_connect() # 전부 연결될 때까지 기다림
 
-cube_ID = 1 # 큐브 번호
+cube_ID = 2 # 큐브 번호
 speed_schedule = [-30, 30, "sleep", 15, -15] # 속도 스케줄
 cycle_schedule = [1, 1, 1, 0.5, 0.5] # 회전 스케줄
 

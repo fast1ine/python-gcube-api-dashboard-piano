@@ -31,6 +31,7 @@ class rawProtocol(Protocol, ProcessProtocol):
     # 로봇 연결 수 설정
     def set_connected_robots_number(self, number: int) -> None:
         self.transport.connected_robots_number = self.connected_robots_number = number # transport에도 설정
+        self.transport._controller_status["connected_number"] = number
         
     # 모두 연결 설정
     def set_is_full_connect(self, TF: bool) -> None:
@@ -44,13 +45,19 @@ class rawProtocol(Protocol, ProcessProtocol):
     def set_is_schedule_set(self, TF: bool) -> None:
         self.transport.is_schedule_set = self.is_schedule_set = TF # transport에도 설정
 
-    # 스케줄 확인 설정
+    # 포인트 확인 설정
     def set_is_point_set(self, TF: bool) -> None:
         self.transport.is_point_set = self.is_point_set = TF # transport에도 설정
+
+    # 스케줄 & 포인트 초기화
+    def init_is_point_and_schedule_set(self) -> None:
+        self.is_schedule_set = self.transport.is_schedule_set = False # transport에도 설정
+        self.is_point_set = self.transport.is_schedule_set = False # transport에도 설정
 
     # 연결 시작시 발생
     def connection_made(self, transport) -> None:
         self.transport = transport # transport 설정
+        self.init_is_point_and_schedule_set()
         self.running = True
         print("Serial connected.")
 
@@ -58,6 +65,7 @@ class rawProtocol(Protocol, ProcessProtocol):
     def connection_lost(self, exc) -> None:
         self.set_connected_robots_number(0)
         self.set_is_full_connect(False)
+        self.init_is_point_and_schedule_set()
         try:
             self.transport.serial.close() # serial 연결 종료
         except:
@@ -86,9 +94,9 @@ class rawProtocol(Protocol, ProcessProtocol):
             if "robot_number" in processed_dict.keys(): # 로봇 숫자 처리
                 self.set_connected_robots_number(processed_dict["robot_number"]) 
             if "schedule_set" in processed_dict.keys(): # 스케줄 설정 처리
-                self.set_is_schedule_set(processed_dict["schedule_set"]) # False 언제 됨 ?????????????????????????????????????????
+                self.set_is_schedule_set(processed_dict["schedule_set"]) 
             if "point_set" in processed_dict.keys(): # 포인트 설정 처리
-                self.set_is_point_set(processed_dict["point_set"]) # False 언제 됨 ?????????????????????????????????????????
+                self.set_is_point_set(processed_dict["point_set"]) 
 
             self.init_buffer() # 버퍼 초기화
             fu, co, di = self.evaluate_connection() # 연결 평가

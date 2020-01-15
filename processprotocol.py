@@ -92,6 +92,7 @@ class ProcessProtocol():
             print("Schedule set.")
             return {"schedule_set": True}
         elif len(self.buffer) == 17:
+            #cube_ID = self.buffer[3]
             schedule_idx = Utils().twobyte_hexlist_to_int(self.buffer[13], self.buffer[14])
             play_idx = self.buffer[15]
             repeat_number = self.buffer[16]
