@@ -2,8 +2,8 @@ import serial
 from utils import Utils
 
 class MotorProtocol():
-    def __init__(self, connection_number):
-        self.connection_number = connection_number
+    def __init__(self, number):
+        self.connection_number = number
 
 
     def _set_discovery_group(self, hexlist, discovery_group):

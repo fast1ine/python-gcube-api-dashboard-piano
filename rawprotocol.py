@@ -10,7 +10,6 @@ class rawProtocol(Protocol, ProcessProtocol):
         ProcessProtocol.__init__(self)
         self.init_buffer()
         self.set_timeout()
-        self.connected_robots_number = 0 # 연결된 로봇 개수
         self.is_full_connect = False
         self.robot_disconnect_flag = False
         self.is_schedule_set = False
@@ -30,8 +29,7 @@ class rawProtocol(Protocol, ProcessProtocol):
 
     # 로봇 연결 수 설정
     def set_connected_robots_number(self, number: int) -> None:
-        self.transport.connected_robots_number = self.connected_robots_number = number # transport에도 설정
-        self.transport._controller_status["connected_number"] = number
+        self.transport._robot_status["processed_status"]["connected_number"] = number
         
     # 모두 연결 설정
     def set_is_full_connect(self, TF: bool) -> None:
