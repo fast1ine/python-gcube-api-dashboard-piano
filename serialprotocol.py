@@ -141,20 +141,19 @@ class ReaderThread(threading.Thread):
         #print("reconnect")
         connection_number = self.get_connection_number()
         try:
-            PORT = Utils().find_bluetooth_dongle(GenerateProtocol().DongleInAction_bytes())
+            PORT = Utils().find_bluetooth_dongle(GenerateProtocol(connection_number).DongleInAction_bytes())
             self.serial = Utils().connect_serial_URL(PORT)
-            self.write(GenerateProtocol().PingPongGn_connect_bytes(connection_number))
+            self.write(GenerateProtocol(connection_number).PingPongGn_connect_bytes())
             self.alive = True
         except Exception as error:
             self.protocol.connection_lost(error)
 
-    def get_connection_number(self) -> int:
+    def get_connection_number(self, discovery_number=None) -> int:
         try:
-            connection_number = self._robot_status["controller_status"]["connection_number"] # get from child class
+            connection_number = self._robot_status[discovery_number].controller_status.connection_number # get from child class
         except:
             print("Error. No child _robot_status varialbe")
-            self._robot_status = {}
-            connection_number = self._robot_status["controller_status"]["connection_number"] = None # default number
+            connection_number = None # default number
         return connection_number
     
     def set_robot_disconnect_flag(self, TF: bool) -> None:

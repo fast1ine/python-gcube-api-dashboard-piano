@@ -24,7 +24,7 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
             if not (1 <= cube_ID and cube_ID <= 8):
                 raise ValueError("Cube ID must be between 1 to 8.")
             elif cube_ID > self.connection_number:
-                raise ValueError("Cube ID must be less or equal to connection number.")
+                raise ValueError("Cube ID must be less than or equal to connection number.")
             cube_ID -= 1 # (1 to 8 -> 0 to 7)
         return cube_ID
     
@@ -81,52 +81,7 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
 
     def play_motor_schedule_bytes(self, cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group=None, \
             pause=False):
-        ### start, stop, repeat 리스트화
-        start_point_list = Utils().to_list(start_point_list)
-        stop_point_list = Utils().to_list(stop_point_list)
-        repeat_list = Utils().to_list(repeat_list)
-
-        ### 큐브 ID 처리
-        cube_ID = self._process_cube_ID(cube_ID)
-        if cube_ID == 0xFF:
-            cube_ID_idx = 0
-        else:
-            cube_ID_idx = cube_ID
-
-        # 반복 처리 (리스트 원소가 1개면 전체 반복 모드)
-        if len(repeat_list) == 1 and not len(start_point_list) == 1 and not len(stop_point_list) == 1:
-            if repeat_list[0] < 0 or 255 < repeat_list[0]:
-                raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
-            print("Entire repeat mode is on. In this mode, the repeat index is not appeared properly.")
-            start_point_list = start_point_list*repeat_list[0]
-            stop_point_list = stop_point_list*repeat_list[0]
-            repeat_list = [1]*len(start_point_list)
-
-        # 스케줄 체크
-        if self.speed_schedule_list[cube_ID_idx] == []:
-            raise ValueError("Schedule is not set. Set schedule first before play.")
-
-        ### 길이 처리
-        if not len(start_point_list) == len(stop_point_list) == len(repeat_list):
-            print(len(start_point_list), len(stop_point_list), len(repeat_list))
-            raise ValueError("Start, stop, repeats list length are must be the same.")
-        for i in range(len(start_point_list)):
-            if isinstance(stop_point_list[i], str) and stop_point_list[i].lower() == "end":
-                stop_point_list[i] = list(map(len, self.speed_schedule_list))[cube_ID_idx]-1 # end이면 제일 뒤에 인덱스
-            Utils().integer_check(start_point_list[i])
-            Utils().integer_check(stop_point_list[i])
-            Utils().integer_check(repeat_list[i])
-            if start_point_list[i] < 0 or stop_point_list[i] < 0 \
-                or len(self.speed_schedule_list[cube_ID_idx])-1 < start_point_list[i] \
-                or len(self.speed_schedule_list[cube_ID_idx])-1 < stop_point_list[i]:
-                raise ValueError("Unavailable number. Schedule does not have that index.")
-            elif stop_point_list[i] < start_point_list[i]:
-                raise ValueError("Start index must be less than or equal to stop index.")
-            elif repeat_list[i] < 0 or 255 < repeat_list[i]:
-                raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
-
-        ### (discovery_group, step_type 처리해야 함)
-        return self.SetScheduledPoints_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group, pause, 0)
+        pass
 
     def pause_motor_bytes(self, pause, cube_ID=None, discovery_group=None, group_mode=False):
         ### 오류 처리

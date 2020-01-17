@@ -22,15 +22,15 @@ class rawProtocol(Protocol, ProcessProtocol):
 
     def add_buffer(self, data):
         self.buffer += data
-    
+
     # 타임아웃 시간 정하기
     def set_timeout(self, sec=1) -> None:
         self.timeout = sec
 
     # 로봇 연결 수 설정
-    def set_connected_robots_number(self, number: int) -> None:
-        self.transport._robot_status["processed_status"]["connected_number"] = number
-        
+    def set_connected_robots_number(self, number: int, discovery_group=None) -> None:
+        self.transport._robot_status[discovery_group].processed_status.connected_number = number
+
     # 모두 연결 설정
     def set_is_full_connect(self, TF: bool) -> None:
         self.transport.is_full_connect = self.is_full_connect = TF # transport에도 설정
@@ -81,7 +81,7 @@ class rawProtocol(Protocol, ProcessProtocol):
             print("Timeout buffer:", Utils().bytes_to_hex_str(self.buffer))
             self.init_buffer()
             self.previous_time = time.time()
-            
+        
         self.add_buffer(data) # 버퍼 받기
         if len(self.buffer) == 9: # 버퍼 사이즈 계산
             self.buffer_size = Utils().twobyte_hexlist_to_int(self.buffer[7], self.buffer[8])
@@ -97,18 +97,15 @@ class rawProtocol(Protocol, ProcessProtocol):
                 self.set_is_point_set(processed_dict["point_set"]) 
 
             self.init_buffer() # 버퍼 초기화
-            fu, co, di = self.evaluate_connection() # 연결 평가
-            self.set_is_full_connect(fu)
-            self.set_connected_robots_number(co) 
-            self.set_robot_disconnect_flag(di) 
-            
+            self.evaluate_connection() # 연결 평가
+    
     # 데이터 보낼 때 함수
     def write(self, data) -> None:
         if self.running:
             self.transport.write(data)
         else:
             print("Not running.")
-        
+    
     # 종료 체크
     def is_done(self) -> bool:
         return self.running
