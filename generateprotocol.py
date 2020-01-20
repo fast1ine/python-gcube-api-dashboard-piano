@@ -10,8 +10,6 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
 
     def __init__(self, number):
         self.connection_number = number
-        self.speed_schedule_list = [[]]*self.connection_number
-        self.step_schedule_list = [[]]*self.connection_number
         MotorProtocol.__init__(self, number)
         MusicProtocol.__init__(self, number)
 
@@ -45,15 +43,18 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
                         #print(start_and_stop_list[0], start_and_stop_list[1])
                         raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must have integer elements.")
                     else:
+                        ### list 등록
                         start.append(start_and_stop_list[i][0])
                         stop.append(start_and_stop_list[i][1])
                 elif isinstance(start_and_stop_list[i], int):
+                    ### list 등록
                     start.append(start_and_stop_list[i])
                     stop.append(start_and_stop_list[i])
                 else:
                     raise ValueError("start_and_stop_list must have list or int elements.")
             return start, stop
         elif isinstance(start_and_stop_list, int):
+            ### list 등록
             start = start_and_stop_list
             stop = start_and_stop_list
             return start, stop
@@ -76,34 +77,3 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
             PingPongGn_connect_hexlist[4] = self.connection_number*16 # connection number
             return serial.to_bytes(PingPongGn_connect_hexlist)
     
-    def run_motor_bytes(self, cube_ID, speed, step_cycle=None, pause=False, discovery_group=None, option="continue") -> bytes:
-        pass
-
-    def play_motor_schedule_bytes(self, cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group=None, \
-            pause=False):
-        pass
-
-    def pause_motor_bytes(self, pause, cube_ID=None, discovery_group=None, group_mode=False):
-        ### 오류 처리
-        if not isinstance(group_mode, bool):
-            raise ValueError("group_mode must be boolean value.")
-        elif not isinstance(pause, bool):
-            raise ValueError("pause must be boolean value.")
-
-        ### 그룹 모드 오류 처리
-        if group_mode:
-            if discovery_group == None:
-                raise ValueError("In group mode, discovery_group must not be None.")
-            else:
-                Utils().integer_check(discovery_group)
-        else:
-            if cube_ID == None:
-                raise ValueError("Not in group mode, cube_ID must not be None.")
-            else:
-                cube_ID = self._process_cube_ID(cube_ID)
-
-        ### (discovery_group 처리해야 함)
-        return self.SetPauseSteps_bytes(pause, cube_ID, discovery_group, group_mode)
-
-    def sync_motor_bytes(self, cube_ID_list):
-        pass

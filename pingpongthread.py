@@ -16,7 +16,7 @@ class PingPongThread(ReaderThread):
         Utils().integer_check(number)
         if 1 <= number and number <= 8: # 1개 이상 8개 이하 
             self._robot_status = {}
-            self._robot_status[None] = RobotStatus(number, None) # 로봇 상태 저장 (key는 discovery group)
+            self._robot_status[None] = RobotStatus(number, None) # 로봇 상태 저장 (dict의 key는 discovery group)
         else:
             raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
         if not PingPongThread._is_instance:
@@ -58,6 +58,13 @@ class PingPongThread(ReaderThread):
         except:
             print("Cannot write.")
 
+    def _init_robot_status(self, discovery_group="all") -> None:
+        if isinstance(discovery_group, str) and discovery_group.lower() == "all":
+            for key in self._robot_status.keys():
+                self._robot_status[key] = RobotStatus(self._robot_status[key].controller_status.connection_number, key)
+        else:
+            self._robot_status[discovery_group] = RobotStatus(self._robot_status[discovery_group].controller_status.connection_number, discovery_group)
+
     # 쓰레드 시작
     def start(self) -> None:
         if not PingPongThread._is_start:
@@ -66,7 +73,7 @@ class PingPongThread(ReaderThread):
             ReaderThread.start(self)
         else:
             raise ValueError("PingPongThread instance cannot start above 1.")
-
+    
     # 쓰레드 종료
     def end(self) -> None:
         self._start_check()
@@ -90,7 +97,7 @@ class PingPongThread(ReaderThread):
                     # 1개는 해제 응답을 안 받음. 2개 이상은 해제 응답을 받음.
                 else:
                     print("Master robot is not connected.")
-                self._robot_status[key] = RobotStatus(self._robot_status[key].contoller_status.connection_number, key)
+                self._init_robot_status(key) # 로봇 상태 초기화
         else:
             if self._robot_status[discovery_group].processed_status.connected_number > 0:
                     self._write(self.GenerateProtocolInstance.PingPong_disconnect_bytes)
@@ -100,7 +107,7 @@ class PingPongThread(ReaderThread):
                     # 1개는 해제 응답을 안 받음. 2개 이상은 해제 응답을 받음.
             else:
                 print("Master robot is not connected.")
-            self._robot_status[discovery_group] = RobotStatus(self._robot_status[discovery_group].contoller_status.connection_number, discovery_group)
+            self._init_robot_status(discovery_group) # 로봇 상태 초기화
         
     def reconnect_robot(self) -> None:
         print("Reconnect with robots.")
@@ -122,24 +129,22 @@ class PingPongThread(ReaderThread):
             }
         return status
 
-    # 완전 연결 체크 (deprecated)
-    def get_is_full_connect(self) -> bool:
-        self._start_check()
-        is_full_connect_flag = self.is_full_connect
-        if not is_full_connect_flag:
-            self._play_once_flag = True # play_once용
-        return is_full_connect_flag
-
     # 완전 연결까지 기다림
-    def wait_until_full_connect(self) -> None:
+    def wait_until_full_connect(self, discovery_group=None) -> None:
         self._start_check()
-        while not self.is_full_connect: ##################full connect 다시
+        connection_number = self._robot_status[discovery_group].controller_status.connection_number
+        connected_robots_number = self._robot_status[discovery_group].processed_status.connected_number
+        while connection_number != connected_robots_number:
+            connection_number = self._robot_status[discovery_group].controller_status.connection_number # 반복하니까 안에 넣어줘야 함.
+            connected_robots_number = self._robot_status[discovery_group].processed_status.connected_number
             pass
         time.sleep(1)
 
     # 한 번만 동작
-    def play_once_full_connect(self):
-        if not self.is_full_connect: # full connection에서 떨어지면 리셋
+    def play_once_full_connect(self, discovery_group=None):
+        connection_number = self._robot_status[discovery_group].controller_status.connection_number
+        connected_robots_number = self._robot_status[discovery_group].processed_status.connected_number
+        if connection_number != connected_robots_number:  # full connection에서 떨어지면 리셋
             self._play_once_flag = True
             return False
         else:
@@ -213,10 +218,6 @@ class PingPongThread(ReaderThread):
                 if speed_list[0] == 0:
                     print("Stop motor(s).")
 
-                ### 동작
-                self._write(self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_element, speed_list[0], discovery_group, pause))
-                time.sleep(0.2)
-
                 ### status 등록
                 if cube_ID_element == 0xFF: # all일 때
                     for i in range(self._robot_status[discovery_group].controller_status.connection_number):
@@ -228,11 +229,11 @@ class PingPongThread(ReaderThread):
                     self._robot_status[discovery_group].controller_status.stepper_speed[cube_ID_element] = speed_list[0]
                     self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause
 
-            elif option.lower() == "step": ### 스텝 모드
                 ### 동작
-                self._write(self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_element, speed_list[0], step[0], discovery_group, pause))
+                self._write(self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_element, speed_list[0], discovery_group, pause))
                 time.sleep(0.2)
 
+            elif option.lower() == "step": ### 스텝 모드
                 ### status 등록
                 if cube_ID_element == 0xFF: # all일 때
                     for i in range(self._robot_status[discovery_group].controller_status.connection_number):
@@ -246,81 +247,51 @@ class PingPongThread(ReaderThread):
                     self._robot_status[discovery_group].controller_status.stepper_step[cube_ID_element] = step[0]
                     self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause
 
+                ### 동작
+                self._write(self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_element, speed_list[0], step[0], discovery_group, pause))
+                time.sleep(0.2)
+
             elif option.lower() == "schedule": ### 스케줄 모드
+                ### status 등록
+                if cube_ID_element == 0xFF: # all일 때
+                    for i in range(self._robot_status[discovery_group].controller_status.connection_number):
+                        self._robot_status[discovery_group].controller_status.stepper_mode[i] = "point"
+                        self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[i] = [0]
+                        self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[i] = [len(speed_list)]
+                        self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[i] = [1]
+                        self._robot_status[discovery_group].controller_status.stepper_speed_schedule[i] = speed_list
+                        self._robot_status[discovery_group].controller_status.stepper_step_schedule[i] = step[0]
+                        self._robot_status[discovery_group].controller_status.stepper_pause[i] = pause
+                else:
+                    self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "point"
+                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[cube_ID_element] = [0]
+                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[cube_ID_element] = [len(speed_list)]
+                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[cube_ID_element] = [1]
+                    self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element] = speed_list
+                    self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element] = step
+                    self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause
+
                 ### pause=True 상태로 동작 
-                self._write(self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_element, speed_list, step, True, discovery_group))
+                self._write(self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_element, speed_list, step, discovery_group, True))
+                time.sleep(0.2)
+                #############################################확인될 때까지 잡아주는 코드 수정
+                self._write(self.GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, [0], [len(speed_list)], [1], discovery_group, True))
                 time.sleep(0.2)
                 #############################################확인될 때까지 잡아주는 코드 수정
 
                 ### pause=True 포인트로 동작
                 if not pause: # 재생
-                    self._write(self.GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, [0], [len(speed_list)], [1], discovery_group, True))
-                    time.sleep(0.2)
                     self._write(self.GenerateProtocolInstance.SetPauseSteps_bytes(False, cube_ID_element, discovery_group))
                     time.sleep(0.2)
 
-                ### status 등록
-                if cube_ID_element == 0xFF: # all일 때
-                    for i in range(self._robot_status[discovery_group].controller_status.connection_number):
-                        if not pause: # 재생일 때
-                            self._robot_status[discovery_group].controller_status.stepper_mode[i] = "point"
-                            self._robot_status[discovery_group].controller_status.stepper_pause[i] = False
-                            self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[i] = [0]
-                            self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[i] = [len(speed_list)]
-                            self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[i] = [1]
-                        else:
-                            self._robot_status[discovery_group].controller_status.stepper_mode[i] = "schedule"
-                            self._robot_status[discovery_group].controller_status.stepper_pause[i] = True
-                        self._robot_status[discovery_group].controller_status.stepper_speed_schedule[i] = speed_list
-                        self._robot_status[discovery_group].controller_status.stepper_step_schedule[i] = step[0]
-                        self._robot_status[discovery_group].controller_status.stepper_pause[i] = pause
-                else:
-                    if not pause: # 재생일 때
-                            self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "point"
-                            self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = False
-                            self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[cube_ID_element] = [0]
-                            self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[cube_ID_element] = [len(speed_list)]
-                            self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[cube_ID_element] = [1]
-                    else:
-                        self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "schedule"
-                        self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = True
-                    self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element] = speed_list
-                    self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element] = step
-                    self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause
-
             else:
-                # cannot reach
-                print("?")
+                print("cannot reach")
 
-
-
-    '''
 
     # 스케줄 설정
     def set_motor_schedule(self, cube_ID, speed_list, step_cycle_list, pause=True, discovery_group=None) -> None:
-        
-        connection_number = self._robot_status["controller_status"]["connection_number"]
-        self._start_check()
-        if not isinstance(pause, bool):
-            raise ValueError("pause must be bool.")
-        cube_ID = Utils().to_list(cube_ID)
-        for i in range(len(cube_ID)):
-            if isinstance(cube_ID[i], str):
-                if len(cube_ID) != 1:
-                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
-                elif cube_ID[i].lower() != "all": 
-                    # len(cube_ID) == 1
-                    raise ValueError("cube_ID must be int, or list, or 'all'.")
-            if connection_number > 1: # 1이면 반응이 안 옴
-                self._write(self.run_motor_bytes(cube_ID[i], speed_list, step_cycle_list, True, discovery_group, "schedule")) # pause
-                #while not self.is_schedule_set: # 스케줄 완료가 되면 실행 ####### 다시
-                #    pass
-                time.sleep(0.2)
-                if not pause:
-                    self._write(self.pause_motor_bytes(False, cube_ID[i], discovery_group, False)) # play motor
-            else:
-                self._write(self.run_motor_bytes(cube_ID[i], speed_list, step_cycle_list, pause, discovery_group, "schedule"))
-            time.sleep(0.2)
+        self.run_motor(cube_ID, speed_list, step_cycle_list, pause, discovery_group, "schedule")
+    
 
     # 스케줄 실행
     def play_motor_schedule(self, cube_ID, repeat_list=1, start_point_list=None, stop_point_list=None, 
@@ -332,61 +303,28 @@ class PingPongThread(ReaderThread):
         start_point_list = Utils().to_list(start_point_list)
         stop_point_list = Utils().to_list(stop_point_list)
         repeat_list = Utils().to_list(repeat_list)
+        cube_ID_list = Utils().to_list(cube_ID)
 
-
-
-
-        # 스케줄 체크는 play_motor_schedule_bytes 안에서 함
-        if not isinstance(pause, bool):
-            raise ValueError("pause must be bool.")
-        if start_point_list == None and stop_point_list == None: # 스타트, 스탑 포인트 체크
-            if start_and_stop_list != None:
-                start_point_list, stop_point_list = self._check_start_and_stop_list(start_and_stop_list)
+        # 디폴트 값 넣기
+        if start_point_list == [None] and stop_point_list == [None]: # 스타트, 스탑 포인트 체크
+            if start_and_stop_list != [None]:
+                start_point_list, stop_point_list = self.GenerateProtocolInstance._check_start_and_stop_list(start_and_stop_list)
             else:
-                start_point_list, stop_point_list = 0, "end"
-        elif start_and_stop_list != None:
+                start_point_list, stop_point_list = 0, "end" # 디폴트 0(처음), end(끝)
+        elif start_and_stop_list != [None]:
             print("Warning. start_point_list and stop_point_list are ignored. start_and_stop_list is accepted.")
-            start_point_list, stop_point_list = self._check_start_and_stop_list(start_and_stop_list)
-        elif start_point_list == None:
+            start_point_list, stop_point_list = self.GenerateProtocolInstance._check_start_and_stop_list(start_and_stop_list)
+        elif start_point_list == [None]:
             start_point_list = 0
-        elif stop_point_list == None:
+        elif stop_point_list == [None]:
             stop_point_list = "end"
+
+        ### 길이 체크
+        if not len(start_point_list) == len(stop_point_list) == len(repeat_list):
+            print(len(start_point_list), len(stop_point_list), len(repeat_list))
+            raise ValueError("Start, stop, repeats list length are must be the same.")
         
-        cube_ID = Utils().to_list(cube_ID)
-        for i in range(len(cube_ID)):
-            if isinstance(cube_ID[i], str):
-                if len(cube_ID) != 1:
-                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
-                elif cube_ID[i].lower() != "all": 
-                    # len(cube_ID) == 1
-                    raise ValueError("cube_ID must be int, or list, or 'all'.")
-            if connection_number > 1: # 1이면 반응이 안 옴
-                self._write(self.play_motor_schedule_bytes(cube_ID[i], start_point_list, stop_point_list, repeat_list, \
-                    discovery_group, True)) # pause
-                #while not self.is_point_set: # 포인트 완료가 되면 실행
-                #    pass
-                time.sleep(0.2)
-                if not pause: # pause가 안 되어 있으면 play
-                    self._write(self.pause_motor_bytes(False, cube_ID[i], discovery_group, False)) # play motor
-            else:
-                self._write(self.play_motor_schedule_bytes(cube_ID[i], start_point_list, stop_point_list, repeat_list, \
-                    discovery_group, pause)) 
-            time.sleep(0.2)
-
-
-
-
-
-        
-
-        ### 큐브 ID 처리
-        cube_ID = self._process_cube_ID(cube_ID)
-        if cube_ID == 0xFF:
-            cube_ID_idx = 0
-        else:
-            cube_ID_idx = cube_ID
-
-        # 반복 처리 (리스트 원소가 1개면 전체 반복 모드)
+        ### 전체 반복 모드 처리 (리스트 원소가 1개면 전체 반복 모드)
         if len(repeat_list) == 1 and not len(start_point_list) == 1 and not len(stop_point_list) == 1:
             if repeat_list[0] < 0 or 255 < repeat_list[0]:
                 raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
@@ -394,87 +332,145 @@ class PingPongThread(ReaderThread):
             start_point_list = start_point_list*repeat_list[0]
             stop_point_list = stop_point_list*repeat_list[0]
             repeat_list = [1]*len(start_point_list)
+        
+        ### 일시정지 처리
+        if not isinstance(pause, bool):
+            raise ValueError("pause must be bool.")
+        
+        ### 큐브 ID, 스케줄 처리
+        speed_length_list = list(map(len, self._robot_status[discovery_group].controller_status.stepper_speed_schedule))
+        for i in range(len(cube_ID_list)):
+            ### 큐브 ID 처리
+            cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
+            if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
+                raise ValueError("If cube ID is all, input must not be length-above-2 list.")
+            
+            ### 스케줄 셋 체크 & 처리
+            if cube_ID_list[i] == 0xFF: # all일 때
+                connection_number = self._robot_status[discovery_group].controller_status.connection_number
+                for k in range(len(connection_number)):
+                    ### 스케줄 셋 체크
+                    if self._robot_status[discovery_group].controller_status.stepper_speed_schedule[k] == [] \
+                        or self._robot_status[discovery_group].controller_status.stepper_pause[k] == False:
+                        raise ValueError("Set schedule before play.")
+                    
+                    ### 스케줄 처리
+                    for j in range(len(start_point_list)):
+                        if isinstance(stop_point_list[j], str) and stop_point_list[j].lower() == "end":
+                            stop_point_list[j] = speed_length_list[k]-1 # end이면 제일 뒤에 인덱스, stop은 마지막 인덱스
+                        Utils().integer_check(start_point_list[j])
+                        Utils().integer_check(stop_point_list[j])
+                        Utils().integer_check(repeat_list[j])
+                        if start_point_list[k] < 0 or stop_point_list[j] < 0 \
+                            or speed_length_list[k]-1 < start_point_list[j] \
+                            or speed_length_list[k]-1 < stop_point_list[j]:
+                            raise ValueError("Unavailable number. Schedule does not have that index.")
+                        elif stop_point_list[j] < start_point_list[j]:
+                            raise ValueError("Start index must be less than or equal to stop index.")
+                        elif repeat_list[j] < 0 or 255 < repeat_list[j]:
+                            raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
+            else: # all이 아닐 때
+                ### 스케줄 셋 체크
+                if self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_list[i]] == [] \
+                    or self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_list[i]] == False:
+                    raise ValueError("Set schedule before play.")
+                
+                ### 스케줄 처리
+                for j in range(len(start_point_list)):
+                    if isinstance(stop_point_list[j], str) and stop_point_list[j].lower() == "end":
+                        stop_point_list[j] = speed_length_list[cube_ID_list[i]]-1 # end이면 제일 뒤에 인덱스, stop은 마지막 인덱스
+                    Utils().integer_check(start_point_list[j])
+                    Utils().integer_check(stop_point_list[j])
+                    Utils().integer_check(repeat_list[j])
+                    if start_point_list[cube_ID_list[i]] < 0 or stop_point_list[j] < 0 \
+                        or speed_length_list[cube_ID_list[i]]-1 < start_point_list[j] \
+                        or speed_length_list[cube_ID_list[i]]-1 < stop_point_list[j]:
+                        raise ValueError("Unavailable number. Schedule does not have that index.")
+                    elif stop_point_list[j] < start_point_list[j]:
+                        raise ValueError("Start index must be less than or equal to stop index.")
+                    elif repeat_list[j] < 0 or 255 < repeat_list[j]:
+                        raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
+        
+        ### 작동 (discovery_group 처리 해야함)
+        for cube_ID_element in cube_ID_list:
+            ### status 등록
+            if cube_ID_element == 0xFF: # all일 때
+                for i in range(self._robot_status[discovery_group].controller_status.connection_number):
+                    self._robot_status[discovery_group].controller_status.stepper_mode[i] = "point"
+                    self._robot_status[discovery_group].controller_status.stepper_pause[i] = pause
+                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[i] = start_point_list
+                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[i] = stop_point_list
+                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[i] = repeat_list
+                    self._robot_status[discovery_group].controller_status.stepper_pause[i] = pause
+            else:
+                self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "point"
+                self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause
+                self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[cube_ID_element] = start_point_list
+                self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[cube_ID_element] = stop_point_list
+                self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[cube_ID_element] = repeat_list
+                self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause
 
-        # 스케줄 체크
-        if self.speed_schedule_list[cube_ID_idx] == []:
-            raise ValueError("Schedule is not set. Set schedule first before play.")
+            ### 작동
+            self._write(self.GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, start_point_list, stop_point_list, repeat_list, discovery_group, True, 0))
+            time.sleep(0.2)
+            #############################################확인될 때까지 잡아주는 코드 수정
 
-        ### 길이 처리
-        if not len(start_point_list) == len(stop_point_list) == len(repeat_list):
-            print(len(start_point_list), len(stop_point_list), len(repeat_list))
-            raise ValueError("Start, stop, repeats list length are must be the same.")
-        for i in range(len(start_point_list)):
-            if isinstance(stop_point_list[i], str) and stop_point_list[i].lower() == "end":
-                stop_point_list[i] = list(map(len, self.speed_schedule_list))[cube_ID_idx]-1 # end이면 제일 뒤에 인덱스
-            Utils().integer_check(start_point_list[i])
-            Utils().integer_check(stop_point_list[i])
-            Utils().integer_check(repeat_list[i])
-            if start_point_list[i] < 0 or stop_point_list[i] < 0 \
-                or len(self.speed_schedule_list[cube_ID_idx])-1 < start_point_list[i] \
-                or len(self.speed_schedule_list[cube_ID_idx])-1 < stop_point_list[i]:
-                raise ValueError("Unavailable number. Schedule does not have that index.")
-            elif stop_point_list[i] < start_point_list[i]:
-                raise ValueError("Start index must be less than or equal to stop index.")
-            elif repeat_list[i] < 0 or 255 < repeat_list[i]:
-                raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
-
-        ### (discovery_group, step_type 처리해야 함)
-        return self.SetScheduledPoints_bytes(cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group, pause, 0)
+            if not pause: # 재생
+                self._write(self.GenerateProtocolInstance.SetPauseSteps_bytes(False, cube_ID_element, discovery_group))
+                time.sleep(0.2)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
     # 모터 일시정지
     def pause_motor(self, cube_ID=None, discovery_group=None, group_mode=False) -> None:
         self._start_check()
-        cube_ID = Utils().to_list(cube_ID)
-        for i in range(len(cube_ID)):
-            if isinstance(cube_ID[i], str):
-                if len(cube_ID) != 1:
-                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
-                elif cube_ID[i].lower() != "all": 
-                    # len(cube_ID) == 1
-                    raise ValueError("cube_ID must be int, or list, or 'all'.")
-            self._write(self.pause_motor_bytes(True, cube_ID[i], discovery_group, group_mode))
-            time.sleep(0.2)
+        cube_ID_list = Utils().to_list(cube_ID)
+        ### 큐브 ID 처리
+        for i in range(len(cube_ID_list)):
+            cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
+            if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
+                raise ValueError("If cube ID is all, input must not be length-above-2 list.")
+        ### 작동
+        for cube_ID_element in cube_ID_list: ################################# all 처리
+            self._write(self.GenerateProtocolInstance.SetPauseSteps_bytes(True, cube_ID_element, discovery_group, group_mode))
+        time.sleep(0.2)
+
 
     # 모터 재생
     def play_motor(self, cube_ID=None, discovery_group=None, group_mode=False) -> None:
-        #############################schedule이면 play 안함
+        ### 시작 체크, 리스트 처리
         self._start_check()
-        for i in range(len(cube_ID)):
-            if isinstance(cube_ID[i], str):
-                if len(cube_ID) != 1:
-                    raise ValueError("If cube_ID is list (or tuple), all elements must be int.")
-                elif cube_ID[i].lower() != "all": 
-                    # len(cube_ID) == 1
-                    raise ValueError("cube_ID must be int, or list, or 'all'.")
-            self._write(self.pause_motor_bytes(False, cube_ID[i], discovery_group, group_mode))
-            time.sleep(0.2)
-    '''
+        cube_ID_list = Utils().to_list(cube_ID)
+
+        ### 큐브 ID 처리
+        for i in range(len(cube_ID_list)):
+            cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
+            if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
+                raise ValueError("If cube ID is all, input must not be length-above-2 list.")
+        
+        ### 작동 처리
+        for cube_ID_element in cube_ID_list:
+            if cube_ID_element == 0xFF: # all일 때
+                connection_number = self._robot_status[discovery_group].controller_status.connection_number
+                for i in range(connection_number):
+                    if self._robot_status[discovery_group].controller_status.stepper_pause[i] == False: 
+                        raise ValueError("Set schedule before play.")
+                    else:
+                        ### status 저장
+                        self._robot_status[discovery_group].controller_status.stepper_pause[i] = False
+                        ### 작동
+                        self._write(self.GenerateProtocolInstance.SetPauseSteps_bytes(False, i, discovery_group, group_mode))
+                        time.sleep(0.2)
+            else:
+                if self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] == False: 
+                    raise ValueError("Set schedule before play.")
+                else:
+                    ### status 저장
+                    self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = False
+                    ### 작동
+                    self._write(self.GenerateProtocolInstance.SetPauseSteps_bytes(False, cube_ID_element, discovery_group, group_mode))
+                    time.sleep(0.2)
+
 
     '''
     def run_motor_aggregate(self, speed_list) -> None:
@@ -513,11 +509,13 @@ class ProcessedStatus():
     def __init__(self, connection_number):
         ### connection status
         self.connected_number = 0
-        self.MAC_address = [0, 0]
+        self.MAC_address = [None]*2
         ### stpeer status
+        self.stepper_schedule_set = [None]*connection_number
+        self.stepper_point_set = [None]*connection_number
         self.stepper_played_pause = [None]*connection_number
-        self.stepper_played_point_idx = [None]*connection_number
         self.stepper_played_schedule_idx = [None]*connection_number
+        self.stepper_played_point_idx = [None]*connection_number
         self.stepper_played_repeat_idx = [None]*connection_number
 
 

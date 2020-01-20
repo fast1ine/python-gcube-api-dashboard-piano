@@ -26,7 +26,7 @@ class ProcessProtocol():
                 self.transport.reconnect()
                 ### 설정
                 self.is_full_connect = False
-                self.transport._robot_status[discovery_group].controller_status.connection_number = 0
+                self.transport._init_robot_status(discovery_group)
             else:
                 ### 설정
                 self.is_full_connect = False
@@ -41,31 +41,34 @@ class ProcessProtocol():
             pass
 
     # OP 코드 처리
-    def process_data(self, discovery_group=None) -> dict:
+    def process_data(self, discovery_group=None) -> None:
         OP_code = self.buffer[6]
         if OP_code == 0xDA: # 1개 연결
             return self._robot_connection_1(discovery_group)
         elif OP_code == 0xAD: # 2개 이상 연결
             return self._robot_connection_1up(discovery_group)
         elif OP_code == 0xCA: # 스케줄 설정
-            return self._stepper_schedule()
+            return self._stepper_schedule(discovery_group)
         elif OP_code == 0xCB: # 포인트 설정
-            return self._stepper_point()
+            return self._stepper_point(discovery_group)
         else:
             return self._unregistered()
 
-    def _unregistered(self) -> int:
+    def _unregistered(self) -> None:
         #print("Operation is not registered.")
-        return {}
+        return None
 
-    def _robot_connection_1(self, discovery_group=None) -> int:
+    def _robot_connection_1(self, discovery_group) -> int:
         connection_number = self.transport._robot_status[discovery_group].controller_status.connection_number
         connected_robots_number = self.transport._robot_status[discovery_group].processed_status.connected_number
         if len(self.buffer) == 11:
             if connection_number == 1 and self.buffer[9] != 0xC0:
                 print("Connected with a master robot.") # 로봇 연결
-                self.transport._robot_status.processed_status.MAC_address = self.buffer[0:2]
-                return {"robot_number": 1}
+                ### 설정
+                self.transport._robot_status[discovery_group].processed_status.MAC_address[0] = self.buffer[0] # MAC 주소
+                self.transport._robot_status[discovery_group].processed_status.MAC_address[1] = self.buffer[1]
+                self.transport._robot_status[discovery_group].processed_status.connected_number = 1
+                return None
             elif self.buffer[9] == 0xC0: # 연결 해제
                 if connected_robots_number > 0: # 이미 연결된 로봇이 있음
                     print("Disconnected with a master robot.") 
@@ -75,50 +78,68 @@ class ProcessProtocol():
                 self.transport.serial.close() # 시리얼 닫음 (transport의 close 함수는 사용하면 작동이 안 됨.)
                 time.sleep(2) # sleep 2 seconds
                 self.transport.reconnect() # 재연결
-                return {"robot_number": 0}
+                ### 설정
+                self.transport._init_robot_status(discovery_group)
+                return None
             else:
                 return self._unregistered()
         else:
             return self._unregistered()
 
-    def _robot_connection_1up(self, discovery_group=None) -> int:
+    def _robot_connection_1up(self, discovery_group) -> int:
         connection_number = self.transport._robot_status[discovery_group].controller_status.connection_number
         if connection_number > 1:
             if len(self.buffer) == 11: # 마스터 로봇
                 print("Connected with a master robot.") # 로봇 연결
-                return {"robot_number": 1}
+                ### 설정
+                self.transport._robot_status[discovery_group].processed_status.MAC_address[0] = self.buffer[0] # MAC 주소
+                self.transport._robot_status[discovery_group].processed_status.MAC_address[1] = self.buffer[1]
+                self.transport._robot_status[discovery_group].processed_status.connected_number = 1
+                return None
             elif len(self.buffer) == 18: # 슬레이브 로봇
                 for i in range(8):
                     if self.buffer[10+i] == 0x0F:
                         print("Connected robots:", i) # (i-1)대 slave 로봇 연결
-                        return {"robot_number": i}
+                        ### 설정
+                        self.transport._robot_status[discovery_group].processed_status.connected_number = i
+                        return None
                 print("Connected robots: 8")# 7대 slave 로봇 연결
-                return {"robot_number": 8}
+                ### 설정
+                self.transport._robot_status[discovery_group].processed_status.connected_number = 8
+                return None
             else:
                 return self._unregistered()
         else:
             return self._unregistered()
 
-    def _stepper_schedule(self) -> None:
+    def _stepper_schedule(self, discovery_group) -> None:
         if len(self.buffer) == 15:
             print("Schedule set.")
-            return {"schedule_set": True}
+            self.transport._robot_status[discovery_group].processed_status.stepper_schedule_set[0] = True # 지금은 1번만 작동함
         elif len(self.buffer) == 17:
             #cube_ID = self.buffer[3]
             schedule_idx = Utils().twobyte_hexlist_to_int(self.buffer[13], self.buffer[14])
             play_idx = self.buffer[15]
             repeat_number = self.buffer[16]
             print("Schedule index:", schedule_idx)
-            print("Schedule play index:", play_idx)
-            print("Schedule repeat number:", repeat_number)
-            return {}
+            print("Point play index:", play_idx)
+            print("Point repeat number:", repeat_number)
+            if self.buffer[12] == 1: # schedule의 pause 여부, 1은 pause
+                self.transport._robot_status[discovery_group].processed_status.stepper_played_pause[0] = True # 지금은 1번만 작동함
+            elif self.buffer[12] == 2: # 2는 resume
+                self.transport._robot_status[discovery_group].processed_status.stepper_played_pause[0] = False
+            self.transport._robot_status[discovery_group].processed_status.stepper_played_schedule_idx[0] = schedule_idx 
+            self.transport._robot_status[discovery_group].processed_status.stepper_played_point_idx[0] = play_idx
+            self.transport._robot_status[discovery_group].processed_status.stepper_played_repeat_idx[0] = repeat_number
+            return None
         else:
             return self._unregistered
-        
-    def _stepper_point(self) -> None:
+    
+    def _stepper_point(self, discovery_group) -> None:
         if len(self.buffer) == 15:
             print("Point set.")
-            return {"point_set": True}
+            self.transport._robot_status[discovery_group].processed_status.stepper_point_set[0] = True # 지금은 1번만 작동함
+            return None
         else:
             return self._unregistered
         

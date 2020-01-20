@@ -33,4 +33,4 @@ e.introduce()
 print(e.PersonInsctance.A) # bbbb
 print(e.PersonInsctance.transport.A) # eeee
 e.PersonInsctance.change()
-print(e.__dict__)
+print(e.__dict__) # XXXX

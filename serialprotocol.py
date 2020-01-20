@@ -6,7 +6,7 @@ import time
 from utils import Utils
 from generateprotocol import GenerateProtocol
 
-class Protocol(metaclass=ABCMeta): # metaclass
+class Protocol(metaclass=ABCMeta): # metaclass: abstract
     """\
     Protocol as used by the ReaderThread. This base class provides empty
     implementations of all methods.
@@ -50,7 +50,6 @@ class ReaderThread(threading.Thread):
         self.protocol = None
         self.end_flag = False
         self.connection_number = 0 # full connection number
-        self.is_full_connect = False
         self.is_schedule_set = False
         self.is_point_set = False
 
