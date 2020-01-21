@@ -70,7 +70,7 @@ class MotorProtocol():
             SPS = 0
         else:
             SPS = None
-        return SPS # -30 to 30
+        return SPS # -1000 to 1000
 
 
     def cycle_to_step(self, cycle) -> float:

@@ -10,7 +10,7 @@ class ProcessProtocol():
         self.transport = None
 
     # 연결 평가
-    def evaluate_connection(self, discovery_group=None) -> None: # is_full_connect, connected_robots_number, robot_disconnect_flag
+    def evaluate_connection(self, discovery_group=None) -> None: 
         connection_number = self.transport._robot_status[discovery_group].controller_status.connection_number
         connected_robots_number = self.transport._robot_status[discovery_group].processed_status.connected_number
         if not self.is_full_connect and connected_robots_number == connection_number: # 모두 연결
@@ -18,8 +18,6 @@ class ProcessProtocol():
             ### 설정
             self.is_full_connect = True
         elif connected_robots_number != connection_number and not self.robot_disconnect_flag: # 전부 연결되지 않았을 때 & disconnect가 아닐 때
-            #print(self.connected_robots_number)
-            #print(self.transport.connection_number)
             if self.is_full_connect and connected_robots_number != 0: # 이전에 전부 연결되었다면 & 마스터가 끊어진 것이 아니라면
                 print("Robot disconnected after full connection. Close all connection.") # 모두 연결 이후에 슬레이브 로봇 연결이 끊어지면 다시 연결이 안됨.
                 self.transport.serial.close() # 시리얼 닫음 (transport의 close 함수를 사용하면 작동이 안 됨.)

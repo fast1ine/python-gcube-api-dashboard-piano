@@ -61,6 +61,13 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
         else:
             raise ValueError("start_and_stop_list must be list (or tuple), or int.")
 
+    def _if_all_function(self, func, not_all_arg, all_cond) -> None:
+        if all_cond:
+            for idx in range(self.connection_number):
+                func(idx)
+        else:
+            func(not_all_arg)
+
     def DongleInAction_bytes(self) -> bytes:
         #DD DD DD DD 00 01 DA 00 0B 00 0D
         DongleInAction_hexlist = [0xDD, 0xDD, 0xDD, 0xDD, 0x00, 0x01, 0xDA, 0x00, 0x0B, 0x00, 0x0D]

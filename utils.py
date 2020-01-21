@@ -53,20 +53,15 @@ class Utils():
                 print("Reconnecting serial...")
                 not_found_flag = True
 
+    # 시리얼 연결
     def connect_serial_URL(self, port) -> serial:
         try:
-            ser = serial.serial_for_url(port, baudrate=115200, timeout=None) # baurate 9600 does not work.
+            ser = serial.serial_for_url(port, baudrate=115200, timeout=None) # baurate 9600 does not work. baudrate is 115200.
             return ser
         except:
             return None
 
     # 실수 체크
-    def list_float_check(self, number) -> None:
-        for i in range(len(number)):
-            try: 
-                float(number[i])
-            except:
-                raise ValueError("Please enter float number or list!")
     def float_check(self, number, option=None) -> None:
         if not (isinstance(number, int) or isinstance(number, float)):
             is_float = False
@@ -79,18 +74,6 @@ class Utils():
                 raise ValueError("Please enter float number!")
 
     #  정수 체크
-    def list_integer_check(self, number, option=None) -> None:
-        self.list_float_check(number)
-        for i in range(len(number)):
-            if not float(number[i]).is_integer():
-                is_integer = False
-            else:
-                is_integer = True
-            if not is_integer:
-                if option:
-                    raise ValueError("Please enter integer number or list, or '" + str(option) + "'!")
-                else:
-                    raise ValueError("Please enter integer number or list!")
     def integer_check(self, number, option=None) -> None:
         if not isinstance(number, int):
             is_integer = False
@@ -118,16 +101,24 @@ class Utils():
             hex_list =  [int(hex_number[-2*(i+1):-2*i], 16)] + hex_list
         return hex_list
 
+    # 2바이트 헥스 리스트를 integer로 변환
     def twobyte_hexlist_to_int(self, byte1, byte2) -> int:
         return int(hex(byte1)[2:] + hex(byte2)[2:], 16)
-        
+    
+    # 리스트로 변환
     def to_list(self, input_data) -> list:
         if isinstance(input_data, list) or isinstance(input_data, tuple):
             return list(input_data)
-        elif isinstance(input_data, int) or isinstance(input_data, float) or isinstance(input_data, str) or input_data == None:
+        elif isinstance(input_data, int) or isinstance(input_data, float) \
+        or isinstance(input_data, str) or isinstance(input_data, bool) or input_data == None:
             return [input_data]
         else:
-            raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or None.")
+            raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or bool, or None.")
+
+    def check_same_element(self, input_list) -> None:
+        for i in range(len(input_list)-1):
+            if input_list[i] in input_list[i+1:]:
+                raise ValueError("All elements must be different each other in list.")
 
 
     input_flag = False

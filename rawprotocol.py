@@ -35,23 +35,10 @@ class rawProtocol(Protocol, ProcessProtocol):
     def set_robot_disconnect_flag(self, TF: bool) -> None:
         self.robot_disconnect_flag = TF
 
-    # 스케줄 확인 설정
-    #def set_is_schedule_set(self, TF: bool) -> None:
-    #    self.is_schedule_set = TF 
-
-    # 포인트 확인 설정
-    #def set_is_point_set(self, TF: bool) -> None:
-    #    self.is_point_set = TF
-
-    # 스케줄 & 포인트 초기화
-    #def init_is_point_and_schedule_set(self) -> None:
-    #    self.is_schedule_set = False # transport에도 설정
-    #    self.is_point_set = False # transport에도 설정
-
     # 연결 시작시 발생
     def connection_made(self, transport) -> None:
         self.transport = transport # transport 설정
-        ProcessProtocol.transport = transport
+        #ProcessProtocol.transport = transport
         #self.init_is_point_and_schedule_set()
         self.running = True
         print("Serial connected.")

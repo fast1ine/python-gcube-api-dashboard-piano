@@ -117,3 +117,25 @@ pause, resume은 continue와 point를 하면 마지막으로 한 것에 영향�
 
 
 
+play_motor_schedule: set한 스케줄을 플레이함
+play_paused_motor: pause시킨 것들을 플레이함.
+
+
+
+
+
+컨티뉴, 스텝
+
+스케줄
+
+포인트
+
+
+
+
+
+
+
+
+
+
