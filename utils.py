@@ -115,11 +115,17 @@ class Utils():
         else:
             raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or bool, or None.")
 
+    # 같은 원소가 있는지 확인
     def check_same_element(self, input_list) -> None:
         for i in range(len(input_list)-1):
             if input_list[i] in input_list[i+1:]:
                 raise ValueError("All elements must be different each other in list.")
 
+    # 모든 cube id가 있는지 확인
+    def all_cube_in_check(self, input_list, connection_number) -> bool:
+        for i in range(connection_number):
+            check = (i in input_list) and True
+        return check
 
     input_flag = False
 

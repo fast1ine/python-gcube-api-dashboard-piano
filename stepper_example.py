@@ -14,6 +14,6 @@ while not keyboard.is_pressed("q"): # q가 눌리기 전까지 쓰레드 유지
         print(PingPongThreadInstance.get_robot_status()) # 상태 확인
 
 motor_speed = "stop"
-PingPongThreadInstance.run_motor(cube_ID, motor_speed, pause=True) # 모터 끔
+PingPongThreadInstance.run_motor(cube_ID, motor_speed) # 모터 끔
 PingPongThreadInstance.end() # 쓰레드 종료
 

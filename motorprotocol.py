@@ -57,11 +57,43 @@ class MotorProtocol():
         return Utils().int_to_hexlist(unsigned_speed, n)
 
 
-    def _register_schedule(self):
-        pass
+    def _check_start_and_stop_list(self, start_and_stop_list: list or int) -> (list, list) or (int, int):
+        # Ex)
+        # [[1, 2], [3, 4]]
+        # [1, 2]
+        # [[1, 2], [3, 4], [5, 6]]
+        # [2, [2, 3], 3, [4, 5]]
+        start = []
+        stop = []
+        if isinstance(start_and_stop_list, list) or isinstance(start_and_stop_list, tuple):
+            for i in range(len(start_and_stop_list)):
+                if isinstance(start_and_stop_list[i], list) or isinstance(start_and_stop_list[i], tuple):
+                    if len(start_and_stop_list[i]) != 2:
+                        raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must be 2-length list (or tuple).")
+                    elif not isinstance(start_and_stop_list[i][0], int) or not isinstance(start_and_stop_list[i][1], int):
+                        #print(start_and_stop_list[0], start_and_stop_list[1])
+                        raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must have integer elements.")
+                    else:
+                        ### list 등록
+                        start.append(start_and_stop_list[i][0])
+                        stop.append(start_and_stop_list[i][1])
+                elif isinstance(start_and_stop_list[i], int):
+                    ### list 등록
+                    start.append(start_and_stop_list[i])
+                    stop.append(start_and_stop_list[i])
+                else:
+                    raise ValueError("start_and_stop_list must have list or int elements.")
+            return start, stop
+        elif isinstance(start_and_stop_list, int):
+            ### list 등록
+            start = start_and_stop_list
+            stop = start_and_stop_list
+            return start, stop
+        else:
+            raise ValueError("start_and_stop_list must be list (or tuple), or int.")
 
 
-    def RPM_to_SPS(self, RPM) -> float:
+    def RPM_to_SPS(self, RPM: float) -> int or None:
         if 3 <= RPM and RPM <= 30:
             SPS = 50*(-60/RPM+22)
         elif -30 <= RPM and RPM <= -3:
@@ -69,16 +101,30 @@ class MotorProtocol():
         elif RPM == 0:
             SPS = 0
         else:
-            SPS = None
-        return SPS # -1000 to 1000
+            print("Warning: RPM must be between +-3 to +- 30, or 0.")
+            return None
+        return round(SPS) # -1000 to 1000
 
 
-    def cycle_to_step(self, cycle) -> float:
+    def SPS_to_RPM(self, SPS: int) -> float or None:
+        if 100 <= SPS and SPS <= 1000:
+            RPM = 60/(-SPS/50+22)
+        elif -1000 <= SPS and SPS <= 100:
+            RPM = -60/(SPS/50+22)
+        elif SPS == 0:
+            RPM = 0
+        else:
+            print("Warning: SPS must be between +-100 to +- 1000, or 0.")
+            RPM = None  
+        return RPM # -300 to 300
+
+
+    def cycle_to_step(self, cycle) -> int:
         step = cycle*2000
-        return step
+        return round(step)
 
 
-    def truncate_speed(self, speed) -> int or float:
+    def truncate_RPM_speed(self, speed: float) -> int or float:
         """truncate speed between -30 to 30 RPM"""
         if speed < -30: 
             speed = -30
@@ -93,9 +139,25 @@ class MotorProtocol():
             print("Warning. Maximum speed is +-30 RPM.")
         return speed
 
+    ### deprecate
+    def truncate_SPS_speed(self, speed: int) -> int:
+        """truncate speed between -1000 to 1000 SPS"""
+        if speed < -1000: 
+            speed = -1000
+            print("Warning. Maximum speed is +-1000 SPS.")
+        elif -100 < speed and speed < 100:
+            distance = [abs(speed+100), abs(speed), abs(speed-100)]
+            if speed != 0: 
+                print("Warning. Minimum speed is +-100 SPS.")
+            speed = [-100, 0, 100][distance.index(min(distance))]
+        elif speed > 1000:
+            speed = 1000
+            print("Warning. Maximum speed is +-1000 SPS.")
+        return speed
 
-    def truncate_step(self, step) -> int or float:
-        """truncate step between 0 to 32.7675 cycle"""
+
+    def truncate_cycle_step(self, step: float) -> int or float:
+        """truncate step between 0 to 32.7675 cycle (65535 steps)"""
         if step < 0:
             step = 0
             print("Warning. Minimum step cycle is 0.")
@@ -221,7 +283,7 @@ class MotorProtocol():
         hexlist[7:9] = Utils().int_to_hexlist(13 + total_length, 2) 
         if in_bytes[0][6] == 0xCC:
             ### Continuous Steps
-            hexlist[10] = 0 
+            hexlist[10] = 0
         elif in_bytes[0][6] == 0xC1:
             ### Relative Single Steps
             hexlist[10] = 1
@@ -232,9 +294,10 @@ class MotorProtocol():
             ### Scheduled Points
             hexlist[10] = 4
         ### attatch in_bytes
+        hexlist_bytes = serial.to_bytes(hexlist)
         for i in range(in_bytes_length):
-            hexlist.extend(list(in_bytes[i]))
-        return serial.to_bytes(hexlist)
+            hexlist_bytes += in_bytes[i]
+        return hexlist_bytes
 
 
     def SetPauseSteps_bytes(self, pause, cube_ID=None, discovery_group=None, agg=False) -> bytes:

@@ -7,7 +7,7 @@ PingPongThreadInstance.wait_until_full_connect()
 
 
 PingPongThreadInstance.write( \
-    PingPongThreadInstance.SetMusicNotesInAction_SetMusicNotes_bytes(1, \
+    PingPongThreadInstance.GenerateProtocolInstance.SetMusicNotesInAction_SetMusicNotes_bytes(1, \
         [56, 54, 52, 54, 56, 56, 56, 54, 54, 54, 56, 59, 59], [25]*13, [0]*13))
 
 

@@ -25,41 +25,6 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
                 raise ValueError("Cube ID must be less than or equal to connection number.")
             cube_ID -= 1 # (1 to 8 -> 0 to 7)
         return cube_ID
-    
-    def _check_start_and_stop_list(self, start_and_stop_list) -> (list, list) or (int, int):
-        # Ex)
-        # [[1, 2], [3, 4]]
-        # [1, 2]
-        # [[1, 2], [3, 4], [5, 6]]
-        # [2, [2, 3], 3, [4, 5]]
-        start = []
-        stop = []
-        if isinstance(start_and_stop_list, list) or isinstance(start_and_stop_list, tuple):
-            for i in range(len(start_and_stop_list)):
-                if isinstance(start_and_stop_list[i], list) or isinstance(start_and_stop_list[i], tuple):
-                    if len(start_and_stop_list[i]) != 2:
-                        raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must be 2-length list (or tuple).")
-                    elif not isinstance(start_and_stop_list[i][0], int) or not isinstance(start_and_stop_list[i][1], int):
-                        #print(start_and_stop_list[0], start_and_stop_list[1])
-                        raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must have integer elements.")
-                    else:
-                        ### list 등록
-                        start.append(start_and_stop_list[i][0])
-                        stop.append(start_and_stop_list[i][1])
-                elif isinstance(start_and_stop_list[i], int):
-                    ### list 등록
-                    start.append(start_and_stop_list[i])
-                    stop.append(start_and_stop_list[i])
-                else:
-                    raise ValueError("start_and_stop_list must have list or int elements.")
-            return start, stop
-        elif isinstance(start_and_stop_list, int):
-            ### list 등록
-            start = start_and_stop_list
-            stop = start_and_stop_list
-            return start, stop
-        else:
-            raise ValueError("start_and_stop_list must be list (or tuple), or int.")
 
     def _if_all_function(self, func, not_all_arg, all_cond) -> None:
         if all_cond:
