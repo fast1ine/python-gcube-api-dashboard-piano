@@ -110,7 +110,7 @@ class Utils():
         if isinstance(input_data, list) or isinstance(input_data, tuple):
             return list(input_data)
         elif isinstance(input_data, int) or isinstance(input_data, float) \
-        or isinstance(input_data, str) or isinstance(input_data, bool) or input_data == None:
+            or isinstance(input_data, str) or isinstance(input_data, bool) or input_data == None:
             return [input_data]
         else:
             raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or bool, or None.")

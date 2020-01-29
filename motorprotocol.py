@@ -5,7 +5,6 @@ class MotorProtocol():
     def __init__(self, number):
         self.connection_number = number
 
-
     def _set_discovery_group(self, hexlist, discovery_group):
         ### set discovery group ID (1 to 8)
         if discovery_group == None:
@@ -14,18 +13,15 @@ class MotorProtocol():
             hexlist[2] = discovery_group
         return hexlist
     
-
     def _set_cube_ID(self, hexlist, cube_ID):
         ### set cube ID 
         hexlist[3] = cube_ID
         return hexlist
 
-
     def _set_connection_number_motor(self, hexlist):
         ### set connection number
         hexlist[4] = self.connection_number*16 
         return hexlist
-
 
     def _set_pause(self, hexlist, pause, pause_location):
         ### set pause
@@ -36,7 +32,6 @@ class MotorProtocol():
             ### resume protocol
             hexlist[pause_location] = 2 
         return hexlist
-
 
     def _generic_stepper_hexlist(self, hexlist, cube_ID, discovery_group, pause) -> list:
         """generic protocol (discovery_group, cube ID, connection number, pause)"""
@@ -50,12 +45,10 @@ class MotorProtocol():
         hexlist = self._set_pause(hexlist, pause, 12)
         return hexlist
 
-
     def _SPS_to_hexlist(self, speed: int, n: int) -> list:
         """convert SPS to unsigned 16 hex list with n bytes"""
         unsigned_speed = Utils().unsigned16(speed)
         return Utils().int_to_hexlist(unsigned_speed, n)
-
 
     def _check_start_and_stop_list(self, start_and_stop_list: list or int) -> (list, list) or (int, int):
         # Ex)
@@ -92,7 +85,6 @@ class MotorProtocol():
         else:
             raise ValueError("start_and_stop_list must be list (or tuple), or int.")
 
-
     def RPM_to_SPS(self, RPM: float) -> int or None:
         if 3 <= RPM and RPM <= 30:
             SPS = 50*(-60/RPM+22)
@@ -104,7 +96,6 @@ class MotorProtocol():
             print("Warning: RPM must be between +-3 to +- 30, or 0.")
             return None
         return round(SPS) # -1000 to 1000
-
 
     def SPS_to_RPM(self, SPS: int) -> float or None:
         if 100 <= SPS and SPS <= 1000:
@@ -118,11 +109,9 @@ class MotorProtocol():
             RPM = None  
         return RPM # -300 to 300
 
-
     def cycle_to_step(self, cycle) -> int:
         step = cycle*2000
         return round(step)
-
 
     def truncate_RPM_speed(self, speed: float) -> int or float:
         """truncate speed between -30 to 30 RPM"""
@@ -155,7 +144,6 @@ class MotorProtocol():
             print("Warning. Maximum speed is +-1000 SPS.")
         return speed
 
-
     def truncate_cycle_step(self, step: float) -> int or float:
         """truncate step between 0 to 32.7675 cycle (65535 steps)"""
         if step < 0:
@@ -166,13 +154,11 @@ class MotorProtocol():
             print("Warning. Maximum step cycle is 32.7675.")
         return step
 
-
     def make_dummy(self, in_bytes) -> bytes:
         """make OP code into 0"""
         in_bytes_list = list(in_bytes)
         in_bytes_list[6] = 0
         return serial.to_bytes(in_bytes_list)
-
 
     def SetContinuousSteps_bytes(self, cube_ID, speed, discovery_group=None, pause=False) -> bytes:
         ### FF FF FF 00 10 00 CC 00 0F 01 00 00 02 11 11
@@ -185,7 +171,6 @@ class MotorProtocol():
         ### convert & set speed
         hexlist[13:15] = self._SPS_to_hexlist(round(speed), 2) 
         return serial.to_bytes(hexlist)
-
 
     def SetSingleSteps_bytes(self, cube_ID, speed, step, discovery_group=None, pause=False) -> bytes:
         ### FF FF FF 00 10 00 C1 00 13 02 01 00 02 00 00 00 00 00 00 ~
@@ -202,7 +187,6 @@ class MotorProtocol():
         ### set step value (0 to 65535, [2000 = 1 cycle])
         hexlist[17:19] = Utils().int_to_hexlist(round(step), 2) 
         return serial.to_bytes(hexlist)
-
 
     def SetScheduledSteps_bytes(self, cube_ID, speed_seq_list, step_seq_list, discovery_group=None, pause=False, \
             step_type=0, servo_angle_list=None, servo_angle_timeout_list=None) -> bytes:
@@ -241,7 +225,6 @@ class MotorProtocol():
                 hexlist.append(servo_angle_timeout_list[i])
         return serial.to_bytes(hexlist)
 
-
     def SetScheduledPoints_bytes(self, cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group=None, \
             pause=False, step_type=0) -> bytes:
         ### FF FF FF 00 10 00 CB 00 0F 02 04 00 02 00 00 ~
@@ -263,7 +246,6 @@ class MotorProtocol():
             ### set repeat time of schedule
             hexlist.append(repeat_list[i])
         return serial.to_bytes(hexlist)
-
 
     def SetAggregateSteps_bytes(self, discovery_group, *in_bytes) -> bytes:
         """step motor command to master robot"""
@@ -299,7 +281,6 @@ class MotorProtocol():
             hexlist_bytes += in_bytes[i]
         return hexlist_bytes
 
-
     def SetPauseSteps_bytes(self, pause, cube_ID=None, discovery_group=None, agg=False) -> bytes:
         if not agg:
             ### FF FF FF 00 10 00 C0 00 0A 02
@@ -323,7 +304,6 @@ class MotorProtocol():
             ### set pause
             hexlist = self._set_pause(hexlist, pause, 9)
         return serial.to_bytes(hexlist)
-
 
     def SetInstantTorque(self, is_max_torque, cube_ID=None, discovery_group=None, agg=False) -> bytes:
         # SPS > 700
@@ -357,7 +337,6 @@ class MotorProtocol():
                 ### default torque
                 hexlist[9] = 0 
         return serial.to_bytes(hexlist)
-
 
     def SetSingleServo(self, cube_ID, servo_value, timeout, discovery_group=None) -> bytes:
         hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x01]
