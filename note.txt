@@ -86,7 +86,16 @@ SPS = 50*(-60/RPM-22)
 
 
 파이썬 상속: parent와 child 변수는 동기화됨.
+parent변수와 child 변수의 이름이 같으면 전달됐을 때 id(포인터)가 동일함. 따라서 완전히 동기화.
+parent변수와 child 변수의 이름이 다르면 전달됐을 때 변경되기 전까지는 id가 동일하지만,
+변경되면 id가 둘이 달라짐. 
 함수는 동기화 안됨. 밖에서는 덮어 씌어 짐. 안에서 따로 불러올 수 있음.
+
+다중 상속: parent1, parent2 클래스에 같은 이름의 함수가 있으면, 먼저 상속한 함수를 불러 옴.
+예) class childClass(parentClass1, parentClass2)
+이면 parentClass1의 함수를 불러옴,
+
+
 
 
 

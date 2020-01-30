@@ -113,36 +113,49 @@ class MotorProtocol():
         step = cycle*2000
         return round(step)
 
-    def truncate_RPM_speed(self, speed: float) -> int or float:
+    def truncate_RPM_speed(self, speed: float, raise_error=False) -> int or float:
         """truncate speed between -30 to 30 RPM"""
-        if speed < -30: 
-            speed = -30
-            print("Warning. Maximum speed is +-30 RPM.")
-        elif -3 < speed and speed < 3:
-            distance = [abs(speed+3), abs(speed), abs(speed-3)]
-            if speed != 0: 
-                print("Warning. Minimum speed is +-3 RPM.")
-            speed = [-3, 0, 3][distance.index(min(distance))]
-        elif speed > 30:
-            speed = 30
-            print("Warning. Maximum speed is +-30 RPM.")
-        return speed
+        if not raise_error:
+            if speed < -30: 
+                speed = -30
+                print("Warning. Maximum speed is +-30 RPM.")
+            elif -3 < speed and speed < 3:
+                distance = [abs(speed+3), abs(speed), abs(speed-3)]
+                if speed != 0: 
+                    print("Warning. Minimum speed is +-3 RPM.")
+                speed = [-3, 0, 3][distance.index(min(distance))]
+            elif speed > 30:
+                speed = 30
+                print("Warning. Maximum speed is +-30 RPM.")
+            return speed
+        else:
+            if speed < -30 or speed > 30: 
+                raise ValueError("Maximum speed is +-30 RPM.")
+            elif -3 < speed and speed < 3 and speed != 0:
+                raise ValueError("Minimum speed is +-3 RPM.")
+            return speed
 
-    ### deprecate
-    def truncate_SPS_speed(self, speed: int) -> int:
+    def truncate_SPS_speed(self, speed: int, raise_error=False) -> int:
         """truncate speed between -1000 to 1000 SPS"""
-        if speed < -1000: 
-            speed = -1000
-            print("Warning. Maximum speed is +-1000 SPS.")
-        elif -100 < speed and speed < 100:
-            distance = [abs(speed+100), abs(speed), abs(speed-100)]
-            if speed != 0: 
-                print("Warning. Minimum speed is +-100 SPS.")
-            speed = [-100, 0, 100][distance.index(min(distance))]
-        elif speed > 1000:
-            speed = 1000
-            print("Warning. Maximum speed is +-1000 SPS.")
-        return speed
+        if not raise_error:
+            if speed < -1000: 
+                speed = -1000
+                print("Warning. Maximum speed is +-1000 SPS.")
+            elif -100 < speed and speed < 100:
+                distance = [abs(speed+100), abs(speed), abs(speed-100)]
+                if speed != 0: 
+                    print("Warning. Minimum speed is +-100 SPS.")
+                speed = [-100, 0, 100][distance.index(min(distance))]
+            elif speed > 1000:
+                speed = 1000
+                print("Warning. Maximum speed is +-1000 SPS.")
+            return speed
+        else:
+            if speed < -1000 or speed > 1000: 
+                raise ValueError("Maximum speed is +-1000 SPS.")
+            elif -100 < speed and speed < 100 and speed != 0:
+                raise ValueError("Minimum speed is +-100 SPS.")
+            return speed
 
     def truncate_cycle_step(self, step: float) -> int or float:
         """truncate step between 0 to 32.7675 cycle (65535 steps)"""

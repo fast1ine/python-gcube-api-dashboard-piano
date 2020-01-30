@@ -69,7 +69,7 @@ class Utils():
             is_float = True
         if not is_float:
             if option:
-                raise ValueError("Please enter float number, or '" + str(option) + "'!")
+                raise ValueError("Please enter float number, or \"" + str(option) + "\"!")
             else:
                 raise ValueError("Please enter float number!")
 
@@ -81,7 +81,7 @@ class Utils():
             is_integer = True
         if not is_integer:
             if option:
-                raise ValueError("Please enter integer number, or '" + str(option) + "'!")
+                raise ValueError("Please enter integer number, or \"" + str(option) + "\"!")
             else:
                 raise ValueError("Please enter integer number!")
 

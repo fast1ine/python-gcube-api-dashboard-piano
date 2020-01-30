@@ -7,7 +7,7 @@ PingPongThreadInstance.wait_until_full_connect() # 전부 연결될 때까지 �
 
 cube_ID = "all" # 큐브 번호
 speed_schedule = [[-1000, 1000, 0, 900, -900], [1000, -1000, 0, -900, 900]] # 속도 스케줄
-cycle_schedule = [[2000, 2000, 2000, 1000, 1000], []] # 회전 스케줄
+cycle_schedule = [[2000, 2000, 2000, 1000, 1000]] # 회전 스케줄
 
 while not keyboard.is_pressed("q"): # q가 눌리기 전까지 쓰레드 유지
     while PingPongThreadInstance.play_once_full_connect(): # 연결 되어있는 동안, 한 번만 실행
