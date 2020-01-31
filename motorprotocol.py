@@ -157,16 +157,40 @@ class MotorProtocol():
                 raise ValueError("Minimum speed is +-100 SPS.")
             return speed
 
-    def truncate_cycle_step(self, step: float) -> int or float:
+    def truncate_cycle_step(self, step: float, raise_error=False) -> int or float:
         """truncate step between 0 to 32.7675 cycle (65535 steps)"""
-        if step < 0:
-            step = 0
-            print("Warning. Minimum step cycle is 0.")
-        elif step > 32.7675:
-            step = 32.7675
-            print("Warning. Maximum step cycle is 32.7675.")
-        return step
+        if not raise_error:
+            if step < 0:
+                step = 0
+                print("Warning. Minimum step cycle is 0.")
+            elif step > 32.7675:
+                step = 32.7675
+                print("Warning. Maximum step cycle is 32.7675.")
+            return step
+        else:
+            if step < 0:
+                raise ValueError("Minimum step cycle is 0.")
+            elif step > 32.7675:
+                raise ValueError("Maximum step cycle is 32.7675.")
+            return step
 
+    def truncate_step_step(self, step: float, raise_error=False) -> int or float:
+        """truncate step between 0 to 32.7675 cycle (65535 steps)"""
+        if not raise_error:
+            if step < 0:
+                step = 0
+                print("Warning. Minimum step is 0.")
+            elif step > 65535:
+                step = 65535
+                print("Warning. Maximum step is 65535.")
+            return step
+        else:
+            if step < 0:
+                raise ValueError("Minimum step is 0.")
+            elif step > 65535:
+                raise ValueError("Maximum step is 65535.")
+            return step
+            
     def make_dummy(self, in_bytes) -> bytes:
         """make OP code into 0"""
         in_bytes_list = list(in_bytes)

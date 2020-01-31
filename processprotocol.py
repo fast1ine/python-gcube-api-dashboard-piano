@@ -113,7 +113,7 @@ class ProcessProtocol():
     def _stepper_schedule(self, discovery_group) -> None:
         if len(self.buffer) == 15:
             print("Schedule set.")
-            self.transport._robot_status[discovery_group].processed_status.stepper_schedule_set[0] = True # 지금은 1번만 작동함
+            self.transport._robot_status[discovery_group].processed_status.stepper_schedule_set[0] = True 
         elif len(self.buffer) == 17:
             #cube_ID = self.buffer[3]
             schedule_idx = Utils().twobyte_hexlist_to_int(self.buffer[13], self.buffer[14])
@@ -123,7 +123,7 @@ class ProcessProtocol():
             print("Point play index:", play_idx)
             print("Point repeat number:", repeat_number)
             if self.buffer[12] == 1: # schedule의 pause 여부, 1은 pause
-                self.transport._robot_status[discovery_group].processed_status.stepper_played_pause[0] = True # 지금은 1번만 작동함
+                self.transport._robot_status[discovery_group].processed_status.stepper_played_pause[0] = True 
             elif self.buffer[12] == 2: # 2는 resume
                 self.transport._robot_status[discovery_group].processed_status.stepper_played_pause[0] = False
             self.transport._robot_status[discovery_group].processed_status.stepper_played_schedule_idx[0] = schedule_idx 
