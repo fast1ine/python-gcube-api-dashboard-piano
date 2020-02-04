@@ -113,6 +113,10 @@ class MotorProtocol():
         step = cycle*2000
         return round(step)
 
+    def step_to_cycle(self, step) -> float:
+        cycle = step/2000
+        return cycle
+
     def truncate_RPM_speed(self, speed: float, raise_error=False) -> int or float:
         """truncate speed between -30 to 30 RPM"""
         if not raise_error:

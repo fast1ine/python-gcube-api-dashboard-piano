@@ -1,7 +1,11 @@
-x = [2, 5, 6, 8]
+a = 3
 
-for i, v in enumerate(x):
-    print(v)
-    v = 5
+def x():
+    z = 7
+    def y():
+        nonlocal z
+        z = 8
+    y()
+    print(z)
 
-print(x)
+x()
