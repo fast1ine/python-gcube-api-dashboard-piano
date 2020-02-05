@@ -356,7 +356,11 @@ class MotorOperation():
             cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
             if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
                 raise ValueError("If cube ID is all, input must not be length-above-2 list.")
-
+        if cube_ID_list[0] == 0xFF:
+            run_number = connection_number
+        else:
+            run_number = len(cube_ID_list)
+        
         ### 일시정지 체크
         if pause_list == [] or pause_list == ():
             raise ValueError("pause_list must not be empty list (or tuple).")
@@ -390,14 +394,14 @@ class MotorOperation():
 
         ### 속도 제한 함수 (RPM, SPS)
         def limit_speed(speed_list_in, is_schedule=False):
-            raise_error = sync and run_option != "continue" and connection_number > 1 # sync 모드이고, continue 모드가 아니면 에러 체크
+            raise_error = sync and run_option != "continue" and run_number > 1 # sync 모드이고, continue 모드가 아니면 에러 체크
             ### list of list화
             if not is_schedule:
                 speed_list_in = [speed_list_in]
                 sleep_list = [[False]*len(speed_list_in[0])]
             else:
                 sleep_list = [[False]*len(speed_list_in[x]) for x in range(len(speed_list_in))]
-            # RPM 모드
+            ### RPM 모드
             if speed_option.upper() == "RPM":
                 ### 속도 체크 & 변환
                 for i in range(len(speed_list_in)):
@@ -429,7 +433,7 @@ class MotorOperation():
 
         ### 스텝 제한 함수 (CYCLE, STEP)
         def limit_step(step_list_in, speed_list_in, sleep_list, is_schedule=False):
-            raise_error = sync and run_option != "continue" and connection_number > 1 # sync 모드이고, continue 모드가 아니면 에러 체크
+            raise_error = sync and run_option != "continue" and run_number > 1 # sync 모드이고, continue 모드가 아니면 에러 체크
             ### list of list화
             if not is_schedule:
                 step_list_in = [step_list_in]
@@ -469,7 +473,7 @@ class MotorOperation():
 
         ### sync 체크 함수 (time_option이 none일 때 사용, limit과 확장 이후)
         def check_time_sync_none(is_schedule, speed_list_in, step_list_in):
-            if sync and connection_number > 1:
+            if sync and run_number > 1:
                 ### 스텝 모드 (speed: SPS, step: STEP)
                 if not is_schedule:
                     step_element_idx0 = self.GenerateProtocolInstance.step_to_cycle(step_list_in[0])
@@ -481,7 +485,7 @@ class MotorOperation():
                             raise ValueError("Step is not syncronous. Time offset of each step must be less than 0.001 sec.")
                 ### 스케줄 모드 (speed: SPS, step: STEP)
                 else:
-                    # len(speed_list_in) == len(step_list_in) == connection_number
+                    # len(speed_list_in) == len(step_list_in) == run_number
                     offset_list = [None]*len(speed_list_in)
                     offset_flag = False
                     j = 0
@@ -531,27 +535,30 @@ class MotorOperation():
 
         ### time_list 변환 함수
         def convert_time_list(time_list_in, is_schedule):
+            ### 현재 스코프로 변수 가져오기
             nonlocal step_list
             nonlocal speed_list
             nonlocal step_option
+            nonlocal speed_option
             step_list_inscope = step_list.copy()
             speed_list_inscope = speed_list.copy()
             ### list of list화
             if not is_schedule:
                 time_list_in = [time_list_in]
-                out_list = [[None]*connection_number]
+                out_list = [[None]*run_number]
+                speed_list_inscope = [speed_list_inscope]
                 step_list_inscope = [step_list_inscope]
             else:
                 if time_option.lower() == "speed":
                     if len(speed_list_inscope) == 1:
-                        speed_list_inscope = speed_list_inscope*connection_number # 로컬 변수라 밖의 스코프에서는 안 바뀜
+                        speed_list_inscope = speed_list_inscope*run_number
                     out_list = [[None]*len(speed_list_inscope[x]) for x in range(len(speed_list_inscope))] 
                 elif time_option.lower() == "step":
                     if len(step_list_inscope) == 1:
-                        step_list_inscope = step_list_inscope*connection_number
+                        step_list_inscope = step_list_inscope*run_number
                     out_list = [[None]*len(step_list_inscope[x]) for x in range(len(step_list_inscope))]
-            if len(time_list_in) == 1:
-                time_list_in = time_list_in*connection_number
+            if len(time_list_in[0]) == 1:
+                time_list_in = [time_list_in[0]*run_number]
             if time_option.lower() == "speed": # speed 단위: SPS, time 단위: sec, speed_limit 이후
                 for i in range(len(time_list_in)):
                     ### 내부 원소 길이는 이미 정리 함.
@@ -566,14 +573,14 @@ class MotorOperation():
                                 raise ValueError("Sleep time cannot bigger than 65.535.")
                         else:
                             speed_element = self.GenerateProtocolInstance.SPS_to_RPM(speed_list_inscope[i][j])/60 # RPS
-                            
-                            out_list[i][j] = round(speed_list_inscope[i][j]*time_list_in[i][j]) ########################################################
+                            out_list[i][j] = round(self.GenerateProtocolInstance.cycle_to_step(speed_element*time_list_in[i][j]))
                             if out_list[i][j] > 65535:
-                                raise ValueError("Step cannot bigger than 65535. Maximum time is {} sec.".format(65535/speed_list_inscope[i][j]))
+                                raise ValueError("Step cannot bigger than 65535. Maximum time is {} sec.".format(32.7675/speed_element))
+                step_option = "STEP"
             elif time_option.lower() == "step": # step 단위: STEP, time 단위: sec, step_limit 이전
                 ### 사이클 체크 & 변환 
                 if step_option.upper() == "CYCLE":
-                    raise_error = sync and connection_number > 1
+                    raise_error = sync and run_number > 1
                     for i in range(len(step_list_inscope)):
                         for j in range(len(step_list_inscope[i])):
                             if isinstance(step_list_inscope[i][j], str) and step_list[i][j].lower() in ["stop", "sleep"]: # 스텝이 0이면 sleep 모드
@@ -594,14 +601,19 @@ class MotorOperation():
                         if step_list_inscope[i][j] == 0: # step이 0이면 sleep 모드
                             step_list_inscope[i][j] = round(time_list_in[i][j]*1000) # step 변경
                             if step_list_inscope[i][j] > 65535:
-                                raise ValueError("Sleep time cannot bigger than 65.535.")
+                                raise ValueError("Sleep time cannot bigger than 65.535 sec.")
                             out_list[i][j] = 0
                         else:
-                            out_list[i][j] = round(step_list_inscope[i][j]/time_list_in[i][j]) ########################################################다시
-                            if 0 < out_list[i][j] < 100 or out_list[i][j] > 1000:
-                                raise ValueError("Speed cannot bigger than +-1000 or smaller than +-100. Maximum time is {} sec, and minimum time is {} sec.".format(step_list_inscope[i][j]/100, step_list_inscope[i][j]/1000))
-                            elif -100 < out_list[i][j] < 0 or out_list[i][j] < -1000:
-                                raise ValueError("Speed cannot bigger than +-1000 or smaller than +-100. Maximum time is {} sec, and minimum time is {} sec.".format(step_list_inscope[i][j]/-100, step_list_inscope[i][j]/-1000))
+                            step_element = self.GenerateProtocolInstance.step_to_cycle(step_list_inscope[i][j]) # step to cycle
+                            RPM = step_element/time_list_in[i][j]*60
+                            if RPM < -30 or -3 < RPM < 3 or RPM > 30:
+                                if not is_schedule:
+                                    og_speed = speed_list[j]
+                                else:
+                                    og_speed = speed_list[i][j]
+                                raise ValueError("Speed cannot bigger than +-30 RPM or smaller than +-3 RPM. Maximum time is {} sec, and minimum time is {} sec of speed {}.".format(abs(step_element*20), abs(step_element*2), og_speed))
+                            out_list[i][j] = round(self.GenerateProtocolInstance.RPM_to_SPS(RPM)) # RPM to SPS
+                speed_option = "SPS"
             ### 겉 list 제거
             if not is_schedule:
                 out_list = out_list[0]
@@ -700,7 +712,6 @@ class MotorOperation():
                 ### 속도 제한
                 speed_list, sleep_list = limit_speed(speed_list)
                 step_list, _ = convert_time_list(time_list, False)
-                step_option = "STEP"
                 step_list, speed_list = limit_step(step_list, speed_list, sleep_list, False)
             ### time option step 모드
             elif time_option.lower() == "step":
@@ -713,8 +724,6 @@ class MotorOperation():
                     raise ValueError("In step and time-step mode, step_list must have same length as cube_ID_list, or have 1 length.")
                 ### 속도 제한
                 speed_list, step_list = convert_time_list(time_list, False)
-                speed_option = "SPS"
-                #step_option = "STEP" ################################################
                 speed_list, sleep_list = limit_speed(speed_list)
                 step_list, speed_list = limit_step(step_list, speed_list, sleep_list, False)
             ### pause 길이 체크
@@ -780,13 +789,6 @@ class MotorOperation():
             check_time_option()
             ### time option 없음
             if time_option.lower() == "none":
-                ### speed, step 길이 체크
-                if not (len(speed_list) == 1 or len(speed_list) == len(cube_ID_list) \
-                    or (cube_ID_list[0] == 0xFF and len(speed_list) == connection_number)):
-                    raise ValueError("In schedule mode, speed_list must have same length as cube_ID_list, or have 1 length.")
-                if not (len(step_list) == 1 or len(step_list) == len(cube_ID_list) \
-                    or (cube_ID_list[0] == 0xFF and len(step_list) == connection_number)):
-                    raise ValueError("In schedule mode, step_list must have same length as cube_ID_list, or have 1 length.")
                 ### speed, step이 list of list인지 체크 (dataframe, array 이용? from numpy)
                 for speed_element in speed_list:
                     if not (isinstance(speed_element, list) or isinstance(speed_element, tuple)):
@@ -794,6 +796,13 @@ class MotorOperation():
                 for step_element in step_list:
                     if not (isinstance(step_element, list) or isinstance(step_element, tuple)):
                         raise ValueError("In schedule mode, all elements of step_list must be list or tuple.")
+                ### speed, step 길이 체크
+                if not (len(speed_list) == 1 or len(speed_list) == len(cube_ID_list) \
+                    or (cube_ID_list[0] == 0xFF and len(speed_list) == connection_number)):
+                    raise ValueError("In schedule mode, speed_list must have same length as cube_ID_list, or have 1 length.")
+                if not (len(step_list) == 1 or len(step_list) == len(cube_ID_list) \
+                    or (cube_ID_list[0] == 0xFF and len(step_list) == connection_number)):
+                    raise ValueError("In schedule mode, step_list must have same length as cube_ID_list, or have 1 length.")
                 ### 내부 원소 길이 체크
                 if len(speed_list) == 1:
                     for step_element in step_list:
@@ -820,13 +829,6 @@ class MotorOperation():
                 step_list, speed_list = limit_step(step_list, speed_list, sleep_list, True)
             ### time option speed 모드
             elif time_option.lower() == "speed":
-                ### time, speed 길이 체크
-                if not (len(time_list) == 1 or len(time_list) == len(cube_ID_list) \
-                    or (cube_ID_list[0] == 0xFF and len(time_list) == connection_number)):
-                    raise ValueError("In schedule and time-speed mode, time_list must have same length as cube_ID_list, or have 1 length.")
-                if not (len(speed_list) == 1 or len(speed_list) == len(cube_ID_list) \
-                    or (cube_ID_list[0] == 0xFF and len(speed_list) == connection_number)):
-                    raise ValueError("In schedule and time-speed mode, speed_list must have same length as cube_ID_list, or have 1 length.")
                 ### time, speed가 list of list인지 체크 (dataframe, array 이용? from numpy)
                 for time_element in time_list:
                     if not (isinstance(time_element, list) or isinstance(time_element, tuple)):
@@ -834,6 +836,13 @@ class MotorOperation():
                 for speed_element in speed_list:
                     if not (isinstance(speed_element, list) or isinstance(speed_element, tuple)):
                         raise ValueError("In schedule mode, all elements of speed_element must be list or tuple.")
+                ### time, speed 길이 체크
+                if not (len(time_list) == 1 or len(time_list) == len(cube_ID_list) \
+                    or (cube_ID_list[0] == 0xFF and len(time_list) == connection_number)):
+                    raise ValueError("In schedule and time-speed mode, time_list must have same length as cube_ID_list, or have 1 length.")
+                if not (len(speed_list) == 1 or len(speed_list) == len(cube_ID_list) \
+                    or (cube_ID_list[0] == 0xFF and len(speed_list) == connection_number)):
+                    raise ValueError("In schedule and time-speed mode, speed_list must have same length as cube_ID_list, or have 1 length.")
                 ### 내부 원소 길이 체크
                 if len(speed_list) == 1:
                     for time_element in time_list:
@@ -861,13 +870,6 @@ class MotorOperation():
                 step_list, speed_list = limit_step(step_list, speed_list, sleep_list, True)
             ### time option step 모드
             elif time_option.lower() == "step":
-                ### time, speed 길이 체크
-                if not (len(time_list) == 1 or len(time_list) == len(cube_ID_list) \
-                    or (cube_ID_list[0] == 0xFF and len(time_list) == connection_number)):
-                    raise ValueError("In schedule and time-step mode, time_list must have same length as cube_ID_list, or have 1 length.")
-                if not (len(step_list) == 1 or len(step_list) == len(cube_ID_list) \
-                    or (cube_ID_list[0] == 0xFF and len(step_list) == connection_number)):
-                    raise ValueError("In schedule and time-step mode, speed_list must have same length as cube_ID_list, or have 1 length.")
                 ### time, step이 list of list인지 체크 (dataframe, array 이용? from numpy)
                 for time_element in time_list:
                     if not (isinstance(time_element, list) or isinstance(time_element, tuple)):
@@ -875,6 +877,13 @@ class MotorOperation():
                 for step_element in step_list:
                     if not (isinstance(step_element, list) or isinstance(step_element, tuple)):
                         raise ValueError("In schedule mode, all elements of step_list must be list or tuple.")
+                ### time, step 길이 체크
+                if not (len(time_list) == 1 or len(time_list) == len(cube_ID_list) \
+                    or (cube_ID_list[0] == 0xFF and len(time_list) == connection_number)):
+                    raise ValueError("In schedule and time-step mode, time_list must have same length as cube_ID_list, or have 1 length.")
+                if not (len(step_list) == 1 or len(step_list) == len(cube_ID_list) \
+                    or (cube_ID_list[0] == 0xFF and len(step_list) == connection_number)):
+                    raise ValueError("In schedule and time-step mode, speed_list must have same length as cube_ID_list, or have 1 length.")
                 ### 내부 원소 길이 체크
                 if len(step_list) == 1:
                     for time_element in time_list:

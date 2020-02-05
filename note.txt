@@ -244,9 +244,10 @@ sps, 사이클: 0이면 초: 사이클/2
 sync 
 스피드: 1000SPS, 2000스텝: 2초
 	1000SPS, 1000스텝: 1초
+2000스텝 = 1사이클
 
 
-STEP/SPS = 초
+STEP/SPS = 초 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX아님
 
 x1 스텝 y1 SPS
 x2 스텝 y2 SPS
@@ -293,8 +294,18 @@ step +- 가능. step=0이면 sleep.
 
 
 
+1 RPM = 1 rot/min = 1/60 rot/sec = 1/60 RPS
+
+x RPM = x/60 RPS
+
+3 RPM = 1/20 RPS : 최저
+30 RPM = 1/2 RPS : 최대
 
 
+
+10 cycle
+
+1/20 RPS: 200초
 
 
 
