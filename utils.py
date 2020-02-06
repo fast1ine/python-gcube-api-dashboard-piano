@@ -127,6 +127,19 @@ class Utils():
             check = (i in input_list) and True
         return check
 
+    ### 리스트 포인터(id)를 다르게 복사
+    def list_product_copy(self, input_list, number) -> list:
+        input_list = input_list[0]
+        out_list = []
+        i = 0
+        while i < number:
+            new_list = [0]*len(input_list)
+            for j in range(len(input_list)):
+                new_list[j] = input_list[j]
+            out_list.append(new_list)
+            i += 1
+        return out_list
+
     input_flag = False
 
     def input(self, string):
