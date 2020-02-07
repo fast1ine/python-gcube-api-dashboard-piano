@@ -5,7 +5,7 @@ PingPongThreadInstance = PingPongThread(number=2) # n개 로봇 연결
 PingPongThreadInstance.start() # 쓰레드 시작
 PingPongThreadInstance.wait_until_full_connect() # 전부 연결될 때까지 기다림
 
-cube_ID = [1, 2] # 큐브 번호
+cube_ID = 1 # 큐브 번호
 motor_speed = 30 # 모터 속도 RPM
 
 while not keyboard.is_pressed("q"): # q가 눌리기 전까지 쓰레드 유지

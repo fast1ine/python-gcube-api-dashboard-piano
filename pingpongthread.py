@@ -81,6 +81,7 @@ class PingPongThread(ReaderThread, MotorOperation):
         self._start_check()
         self.disconnect_master_robot()
         self.close()
+        self._init_robot_status()
         print("End thread.")
         PingPongThread._is_start = False
 
@@ -168,6 +169,10 @@ class PingPongThread(ReaderThread, MotorOperation):
         else:
             return self.GenerateProtocolInstance.RPM_to_SPS(SPS)
 
+    # time_seconds 초 동안 기다림
+    def wait(self, time_seconds):
+        time.sleep(time_seconds)
+
 
 
 ### 상태 저장용 구조체
@@ -196,6 +201,7 @@ class ProcessedStatus():
         self.connected_number = 0
         self.MAC_address = [None]*2
         ### stepper status
+        self.stepper_agg_set = None
         self.stepper_schedule_set = [None]*connection_number
         self.stepper_point_set = [None]*connection_number
         self.stepper_played_pause = [None]*connection_number

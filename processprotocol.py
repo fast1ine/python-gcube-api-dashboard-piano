@@ -49,6 +49,8 @@ class ProcessProtocol():
             return self._stepper_schedule(discovery_group)
         elif OP_code == 0xCB: # 포인트 설정
             return self._stepper_point(discovery_group)
+        elif OP_code == 0xCD: # agg 설정
+            return self._set_agg(discovery_group)
         else:
             return self._unregistered()
 
@@ -136,8 +138,13 @@ class ProcessProtocol():
     def _stepper_point(self, discovery_group) -> None:
         if len(self.buffer) == 15:
             print("Point set.")
-            self.transport._robot_status[discovery_group].processed_status.stepper_point_set[0] = True # 지금은 1번만 작동함
+            self.transport._robot_status[discovery_group].processed_status.stepper_point_set[0] = True # 1번만 작동함
             return None
         else:
             return self._unregistered
+
+    def _set_agg(self, discovery_group) -> None:
+        self.transport._robot_status[discovery_group].processed_status.stepper_agg_set = True
+        print("Aggregator set.")
+        return None
         

@@ -324,20 +324,22 @@ class MotorOperation():
         speed_option="RPM", 
         step_option="CYCLE", 
         sync=False, 
-        time_option=None) -> None:
+        time_option=None,
+        wait=0) -> None:
         """
         Run stepper motors as syncronized mode.
         speed_list: Integer, range from +- 100 to +- 1000, or 0. The unit is SPS(step per second?), or RPM(rotation per minute). 
-        run_option: continue, step, schedule
-        speed_option: RPM, SPS
-        step_option: CYCLE, STEP
-        sync: synchronous mode
-        time_option: None, speed, step
+        run_option: \"continue\", \"step\", \"schedule\"
+        speed_option: \"RPM\", \"SPS\"
+        step_option: \"CYCLE\", \"STEP\"
+        sync: synchronous mode, True or False
+        time_option: None, \"speed\", \"step\"
+        wait: time(sec), \"step\", \"schedule\"
         """
         ### 연결 개수
         connection_number = self._robot_status[discovery_group].controller_status.connection_number
-        if connection_number == 1: # 1개면 agg 불가능.
-            raise ValueError("Sync mode cannot operate with single cube.") ###### 나중에 자동으로 고칠 것.
+        #if connection_number == 1: # 1개면 agg 불가능.
+        #    raise ValueError("Sync mode cannot operate with single cube.") ###### 나중에 자동으로 고칠 것.
 
         ### 시작 체크
         self._start_check_copy()
@@ -351,11 +353,11 @@ class MotorOperation():
         ### 큐브 ID 처리
         if cube_ID_list == [] or pause_list == ():
             raise ValueError("cube ID must not be empty list.")
-        Utils().check_same_element(cube_ID_list) # 같은 원소가 있으면 error
         for i in range(len(cube_ID_list)):
             cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
             if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
                 raise ValueError("If cube ID is all, input must not be length-above-2 list.")
+        Utils().check_same_element(cube_ID_list) # 같은 원소가 있으면 error
         if cube_ID_list[0] == 0xFF:
             run_number = connection_number
         else:
@@ -377,7 +379,15 @@ class MotorOperation():
         ### 싱크 체크
         if not isinstance(sync, bool):
             raise ValueError("sync must be bool.")
-        
+
+        ### wait 체크
+        if not isinstance(wait, int) and not isinstance(wait, float) and not isinstance(wait, str):
+            raise ValueError("wait must be int, float, or str.")
+        elif (isinstance(wait, int) or isinstance(wait, float)) and wait < 0:
+            raise ValueError("wait cannot be less than 0.")
+        elif isinstance(wait, str) and (wait.lower() != "step" and wait.lower() != "schedule"):
+            raise ValueError("Unknown wait option.")
+
         ### 타임 옵션 체크 함수
         def check_time_option(is_continue=False):
             nonlocal time_option
@@ -409,6 +419,8 @@ class MotorOperation():
                         if (isinstance(speed_list_in[i][j], str) and speed_list_in[i][j].lower() in ["stop", "sleep"]) or speed_list_in[i][j] == 0: # 스피드가 0이면 sleep 모드
                             speed_list_in[i][j] = 0
                             sleep_list[i][j] = True
+                        if not is_schedule and (isinstance(speed_list_in[i][j], list) or isinstance(speed_list_in[i][j], tuple)):
+                            raise ValueError("In {} mode, elements of lists cannot be list or tuple.".format(run_option.lower()))
                         Utils().float_check(speed_list_in[i][j], "stop or sleep")
                         speed_list_in[i][j] = self.GenerateProtocolInstance.truncate_RPM_speed(speed_list_in[i][j], raise_error) # speed 자르기
                         speed_list_in[i][j] = self.GenerateProtocolInstance.RPM_to_SPS(speed_list_in[i][j]) # 단위를 RPM에서 SPS로 변경
@@ -420,7 +432,8 @@ class MotorOperation():
                         if (isinstance(speed_list_in[i][j], str) and speed_list_in[i][j].lower() in ["stop", "sleep"]) or speed_list_in[i][j] == 0: # 스피드가 0이면 sleep 모드
                             speed_list_in[i][j] = 0
                             sleep_list[i][j] = True
-                        Utils().integer_check(speed_list_in[i][j]) # SPS는 integer이어야 함.
+                        speed_list_in[i][j] = round(speed_list_in[i][j])
+                        Utils().float_check(speed_list_in[i][j])
                         speed_list_in[i][j] = self.GenerateProtocolInstance.truncate_SPS_speed(speed_list_in[i][j], raise_error) # speed 자르기
             ### 이외 옵션 오류
             else:
@@ -667,27 +680,55 @@ class MotorOperation():
 
         ### 내부 원소 리스트 길이 체크 함수
         def len_check_elemental_list(input_list1, input_list2, mode_name, input_list1_name, input_list2_name):
+            error_str = "In {} mode, each length of elements of {} and {} must be equal.".format(mode_name, input_list1_name, input_list2_name)
             if len(input_list1) == 1:
                 for input_list2_element in input_list2:
                     if len(input_list2_element) != len(input_list1[0]):
-                        raise ValueError("In {} mode, each length of elements of {} and {} must be equal.".format(mode_name, input_list1_name, input_list2_name))
+                        raise ValueError(error_str)
             elif len(input_list2) == 1:
                 for input_list1_element in input_list1:
                     if len(input_list1_element) != len(input_list2[0]):
-                        raise ValueError("In {} mode, each length of elements of {} and {} must be equal.".format(mode_name, input_list1_name, input_list2_name))
+                        raise ValueError(error_str)
             else:
                 for input_list1_element, input_list2_element in zip(input_list1, input_list2):
                     if len(input_list1_element) != len(input_list2_element):
-                        raise ValueError("In {} mode, each length of elements of {} and {} must be equal.".format(mode_name, input_list1_name, input_list2_name))
+                        raise ValueError(error_str)
         
-        ### sync 모드 내부 원소 길이 체크
+        ### sync 모드 내부 원소 길이 체크 함수
         def len_check_elemental_list_in_sync(input_list1, input_list2, mode_name, input_list1_name, input_list2_name):
+            error_str = "In {} mode, each length of elements of {} must be equal."
             for input_list1_element in input_list1:
                 if len(input_list1_element) != len(input_list1[0]):
-                    raise ValueError("In {} mode, each length of elements of {} must be equal.".format(mode_name, input_list1_name))
+                    raise ValueError(error_str.format(mode_name, input_list1_name))
             for input_list2_element in input_list2:
                 if len(input_list2_element) != len(input_list2[0]):
-                    raise ValueError("In {} mode, each length of elements of {} must be equal.".format(mode_name, input_list2_name))
+                    raise ValueError(error_str.format(mode_name, input_list2_name))
+
+        ### wait 처리 함수
+        def convert_wait(wait_in, is_schedule):
+            def cal_time(speed_element, step_element):
+                if speed_element == 0:
+                    new_time_out = step_element/1000
+                else:
+                    speed_element = self.GenerateProtocolInstance.SPS_to_RPM(speed_element)/60 # RPS
+                    step_element = self.GenerateProtocolInstance.step_to_cycle(step_element)
+                    new_time_out = abs(step_element/speed_element)
+                return new_time_out
+            # speed: SPS, step: STEP
+            max_time = 0
+            if wait_in == "step":
+                for speed_element, step_element in zip(speed_list, step_list):
+                    new_time = cal_time(speed_element, step_element)
+                    if new_time > max_time:
+                        max_time = new_time
+            elif wait_in == "schedule":
+                for i in range(len(speed_list)):
+                    new_time = 0
+                    for speed_element, step_element in zip(speed_list[i], step_list[i]):
+                        new_time += cal_time(speed_element, step_element)
+                    if new_time > max_time:
+                        max_time = new_time
+            return max_time
 
         ### 옵션, 속도, 스텝, 정지 처리 & 작동
         if not isinstance(run_option, str):
@@ -716,20 +757,19 @@ class MotorOperation():
                     self._robot_status[discovery_group].controller_status.stepper_pause[x] = pause_list[0]
                 self.GenerateProtocolInstance._if_all_function(reg_stat, None, True)
                 ### 동작
-                continue_bytes = self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_list[0], speed_list[0], discovery_group, pause_list[0])
+                sending_bytes = self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_list[0], speed_list[0], discovery_group, pause_list[0])
             ### all이 아닌 경우 (바이트 여러 줄)
             else: 
-                continue_bytes = b""
+                sending_bytes = b""
                 for i, cube_ID_element in enumerate(cube_ID_list):
                     ### status 등록
                     self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "continue"
                     self._robot_status[discovery_group].controller_status.stepper_speed[cube_ID_element] = speed_list[i]
                     self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
                     ### bytes 붙이기
-                    continue_bytes += self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_element, speed_list[i], discovery_group, pause_list[i])
-                ####################################### pause 했다가 다시?
-            self._write_copy(self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, continue_bytes))
-            time.sleep(0.2)
+                    sending_bytes += self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_element, speed_list[i], discovery_group, pause_list[i])
+            if connection_number > 1:
+                sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
         ### 스텝 모드
         elif run_option.lower() == "step":
             ### time option 체크
@@ -766,6 +806,9 @@ class MotorOperation():
             speed_list, step_list, pause_list = expand_bytes(speed_list, step_list, pause_list)
             ### sync 모드 처리
             speed_list, step_list = check_time_sync_none(False, speed_list, step_list)
+            ### wait 처리
+            if isinstance(wait, str):
+                wait = convert_wait(wait, False)
             ### 작동 처리 (discovery_group 처리 해야함)
             ### all인 경우 (바이트 1줄)
             if cube_ID_list[0] == 0xFF: 
@@ -777,10 +820,10 @@ class MotorOperation():
                     self._robot_status[discovery_group].controller_status.stepper_pause[x] = pause_list[0]
                 self.GenerateProtocolInstance._if_all_function(reg_stat, None, True)
                 ### 동작
-                step_bytes = self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_list[0], speed_list[0], step_list[0], discovery_group, pause_list[0])
+                sending_bytes = self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_list[0], speed_list[0], step_list[0], discovery_group, pause_list[0])
             ### all이 아닌 경우 (바이트 여러 줄)
             else: 
-                step_bytes = b""
+                sending_bytes = b""
                 for i, cube_ID_element in enumerate(cube_ID_list):
                     ### status 등록
                     self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "step"
@@ -788,10 +831,9 @@ class MotorOperation():
                     self._robot_status[discovery_group].controller_status.stepper_step[cube_ID_element] = step_list[i]
                     self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
                     ### bytes 붙이기
-                    step_bytes += self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, pause_list[i])
-            ####################################### pause 했다가 다시?
-            self._write_copy(self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, step_bytes))
-            time.sleep(0.2)
+                    sending_bytes += self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, pause_list[i])
+            if connection_number > 1:
+                sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
         ### 스케줄 모드
         elif run_option.lower() == "schedule":
             ### 타임 옵션 체크
@@ -852,6 +894,9 @@ class MotorOperation():
             speed_list, step_list, pause_list = expand_bytes(speed_list, step_list, pause_list)
             ### sync 모드 처리
             speed_list, step_list = check_time_sync_none(True, speed_list, step_list)
+            ### wait 처리
+            if isinstance(wait, str):
+                wait = convert_wait(wait, False)
             ### 작동 처리 (discovery_group 처리 해야함)
             ### all인 경우 (바이트 1줄)
             if cube_ID_list[0] == 0xFF: 
@@ -866,11 +911,10 @@ class MotorOperation():
                     self._robot_status[discovery_group].controller_status.stepper_pause[x] = pause_list[0]
                 self.GenerateProtocolInstance._if_all_function(reg_stat, None, True)
                 ### 동작
-                schedule_bytes = self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_list[0], speed_list[0], step_list[0], discovery_group, False)
-                ####################################### pause 했다가 다시?
+                sending_bytes = self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_list[0], speed_list[0], step_list[0], discovery_group, False)
             ### all이 아닌 경우 (바이트 여러 줄)
             else: 
-                schedule_bytes = b""
+                sending_bytes = b""
                 for i, cube_ID_element in enumerate(cube_ID_list):
                     ### status 등록
                     self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "schedule"
@@ -881,9 +925,26 @@ class MotorOperation():
                     self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element] = step_list[i]
                     self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
                     ### bytes 붙이기
-                    schedule_bytes += self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, False)
-            self._write_copy(self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, schedule_bytes))
-            time.sleep(0.2)
+                    sending_bytes += self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, False)
+            if connection_number > 1:
+                sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
+        ### 작동
+        self._write_copy(sending_bytes) #######################puase 했다가 다시 실행
+        ### agg 설정이 올 때까지 잡아두기
+        if connection_number > 1:
+            while self._robot_status[discovery_group].processed_status.stepper_agg_set != True:
+                pass
+            self._robot_status[discovery_group].processed_status.stepper_agg_set = False
+        else:
+            time.sleep(0.5)
+        ### sleep
+        if wait != 0:
+            time.sleep(wait + 0.3)
+        time.sleep(0.2)
+
+
+    def stop_motor(self, cube_ID_list="all", discovery_group=None) -> None:
+        self.run_motor(cube_ID_list=cube_ID_list, speed_list=0, discovery_group=discovery_group)
 
 
     def set_motor_schedule_sync(self) -> None:
