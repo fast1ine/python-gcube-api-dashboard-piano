@@ -341,6 +341,6 @@ x = [[1, 2, 3]]*3
 https://suwoni-codelab.com/python%20%EA%B8%B0%EB%B3%B8/2018/03/02/Python-Basic-copy/
 
 
-
+60 rpm ->
 
 

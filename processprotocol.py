@@ -113,6 +113,7 @@ class ProcessProtocol():
             return self._unregistered()
 
     def _stepper_schedule(self, discovery_group) -> None:
+        ######################################################################버퍼 잘림 수정
         if len(self.buffer) == 15:
             print("Schedule set.")
             self.transport._robot_status[discovery_group].processed_status.stepper_schedule_set[0] = True 

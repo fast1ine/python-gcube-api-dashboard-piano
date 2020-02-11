@@ -1,4 +1,5 @@
 import serial.tools.list_ports
+import time
 
 class Utils():
     # insert bewtween string
@@ -24,13 +25,13 @@ class Utils():
                 p = ports[i]
                 try:
                     # 9600으로 한 번 보내기 (이전에 연결 했었다가 다시 115200으로 PingPongDongle_connect_bytes를 보내면 응답을 안 받음.)
-                    ser = serial.serial_for_url(str(p.device), baudrate=9600, timeout=0, write_timeout=0.5) 
+                    ser = serial.serial_for_url(str(p.device), baudrate=9600, timeout=0.5, write_timeout=1) 
                     ser.write(connect_bytes)
                     ser.close()
+                    time.sleep(1) # 1초 sleep (바로 하면 안 받음)
                     ser = serial.serial_for_url(str(p.device), baudrate=115200, timeout=1, write_timeout=0.5)
                     ser.write(connect_bytes)
                     data = ser.read(11)
-                    #print(data)
                     ser.close()
                     if data == connect_bytes:
                         print("Found device: " + str(p.description))
@@ -43,6 +44,7 @@ class Utils():
                     else:
                         print("What device is this?")
                 except:
+                    #print(error)
                     try:
                         ser.close()
                     except:

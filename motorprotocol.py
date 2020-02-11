@@ -1,4 +1,3 @@
-import serial
 from utils import Utils
 
 class MotorProtocol():
@@ -199,7 +198,7 @@ class MotorProtocol():
         """make OP code into 0"""
         in_bytes_list = list(in_bytes)
         in_bytes_list[6] = 0
-        return serial.to_bytes(in_bytes_list)
+        return bytes(in_bytes_list)
 
     def SetContinuousSteps_bytes(self, cube_ID, speed, discovery_group=None, pause=False) -> bytes:
         ### FF FF FF 00 10 00 CC 00 0F 01 00 00 02 11 11
@@ -211,7 +210,7 @@ class MotorProtocol():
         #hexlist[9] 
         ### convert & set speed
         hexlist[13:15] = self._SPS_to_hexlist(round(speed), 2) 
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)
 
     def SetSingleSteps_bytes(self, cube_ID, speed, step, discovery_group=None, pause=False) -> bytes:
         ### FF FF FF 00 10 00 C1 00 13 02 01 00 02 00 00 00 00 00 00 ~
@@ -227,7 +226,7 @@ class MotorProtocol():
         #hexlist[15:17] = [0, 0] 
         ### set step value (0 to 65535, [2000 = 1 cycle])
         hexlist[17:19] = Utils().int_to_hexlist(round(step), 2) 
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)
 
     def SetScheduledSteps_bytes(self, cube_ID, speed_seq_list, step_seq_list, discovery_group=None, pause=False, \
             step_type=0, servo_angle_list=None, servo_angle_timeout_list=None) -> bytes:
@@ -264,7 +263,7 @@ class MotorProtocol():
                 hexlist.append(servo_angle_list[i])
                 ### set servo timeout (1 to 255 sec, 0 for 21.845 min)
                 hexlist.append(servo_angle_timeout_list[i])
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)
 
     def SetScheduledPoints_bytes(self, cube_ID, start_point_list, stop_point_list, repeat_list, discovery_group=None, \
             pause=False, step_type=0) -> bytes:
@@ -286,12 +285,12 @@ class MotorProtocol():
             hexlist.extend(Utils().int_to_hexlist(stop_point_list[i], 2))
             ### set repeat time of schedule
             hexlist.append(repeat_list[i])
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)
 
     def SetAggregateSteps_bytes(self, discovery_group, *in_bytes) -> bytes:
         """step motor command to master robot"""
-        ### AA AA 01 AA 10 00 CD 00 12 02 00 00 00 ~
-        hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0x00, 0xCD, 0x00, 0x12, 0x02, 0x00, 0x00, 0x00]
+        ### FF FF 01 AA 10 00 CD 00 12 02 00 00 00 ~
+        hexlist = [0xFF, 0xFF, 0x01, 0xAA, 0x10, 0x00, 0xCD, 0x00, 0x12, 0x02, 0x00, 0x00, 0x00]
 
         ### set discovery group ID (0 to 8)
         hexlist = self._set_discovery_group(hexlist, discovery_group)
@@ -317,7 +316,7 @@ class MotorProtocol():
             ### Scheduled Points
             hexlist[10] = 4
         ### attatch in_bytes
-        hexlist_bytes = serial.to_bytes(hexlist)
+        hexlist_bytes = bytes(hexlist)
         for i in range(in_bytes_length):
             hexlist_bytes += in_bytes[i]
         return hexlist_bytes
@@ -344,7 +343,7 @@ class MotorProtocol():
             hexlist = self._set_connection_number_motor(hexlist)
             ### set pause
             hexlist = self._set_pause(hexlist, pause, 9)
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)
 
     def SetInstantTorque(self, is_max_torque, cube_ID=None, discovery_group=None, agg=False) -> bytes:
         # SPS > 700
@@ -377,7 +376,7 @@ class MotorProtocol():
             else:
                 ### default torque
                 hexlist[9] = 0 
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)
 
     def SetSingleServo(self, cube_ID, servo_value, timeout, discovery_group=None) -> bytes:
         hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x01]
@@ -391,4 +390,4 @@ class MotorProtocol():
         hexlist[11] = servo_value
         ### set servo timeout (1 to 255 sec, 0 or 0xFF: 21.845 min ?)
         hexlist[12] = timeout
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)

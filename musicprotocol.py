@@ -1,4 +1,3 @@
-import serial
 from utils import Utils
 
 class MusicProtocol():
@@ -60,7 +59,7 @@ class MusicProtocol():
             hexlist.append(pianokey_list[i])
             hexlist.append(duration_list[i])
             hexlist.append(rest_list[i])
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)
 
     def SetMusicNotesInAction_AggregateSetMusicNotes_bytes(self, discovery_group, *in_bytes) -> bytes:
         hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0xA2, 0xE8, 0x00, 0x0B, 0x00, 0x00]
@@ -77,7 +76,7 @@ class MusicProtocol():
         ### attatch in_bytes
         for i in range(len(in_bytes)):
             hexlist.extend(list(in_bytes[i]))
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)
         
 
     def SetMusicNotesInAction_PlayMusicNotes_bytes(self, cube_ID, play, discovery_group=None) -> bytes:
@@ -93,4 +92,4 @@ class MusicProtocol():
         else:
             ### pause
             hexlist[9] = 1
-        return serial.to_bytes(hexlist)
+        return bytes(hexlist)

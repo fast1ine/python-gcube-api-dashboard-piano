@@ -171,6 +171,10 @@ class PingPongThread(ReaderThread, MotorOperation):
 
     # time_seconds 초 동안 기다림
     def wait(self, time_seconds):
+        if not isinstance(time_seconds, int) and not isinstance(time_seconds, float):
+            raise ValueError("time_seconds must be int or float.")
+        elif time_seconds < 0:
+            raise ValueError("time_seconds must positive value.")
         time.sleep(time_seconds)
 
 
