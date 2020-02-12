@@ -42,7 +42,7 @@ class MotorOperation():
             raise ValueError("pause must be bool.")
         
         ### 큐브 ID 처리
-        if cube_ID_list == []:
+        if cube_ID_list == [] or cube_ID_list == ():
             raise ValueError("cube ID must not be empty list.")
         Utils().check_same_element(cube_ID_list) # 같은 원소가 있으면 error
         for i in range(len(cube_ID_list)):
@@ -127,127 +127,7 @@ class MotorOperation():
                     time.sleep(0.2)
         else:
             raise ValueError("cannot reach")
-            
-
-    
-    
-
-    # 스케줄 실행
-    def play_motor_schedule(self, cube_ID, repeat_list=1, start_point_list=None, stop_point_list=None, 
-        start_and_stop_list=None, discovery_group=None, pause=False) -> None:
-        """
-        Play motors with set schedule.
-        """
-        ### start 체크
-        self._start_check_copy()
-
-        ### start, stop, repeat 리스트화
-        start_point_list = Utils().to_list(start_point_list)
-        stop_point_list = Utils().to_list(stop_point_list)
-        repeat_list = Utils().to_list(repeat_list)
-        cube_ID_list = Utils().to_list(cube_ID)
-
-        # 디폴트 값 넣기
-        if start_point_list == [None] and stop_point_list == [None]: # 스타트, 스탑 포인트 체크
-            if start_and_stop_list != None:
-                start_point_list, stop_point_list = self.GenerateProtocolInstance._check_start_and_stop_list(start_and_stop_list)
-            else:
-                start_point_list, stop_point_list = [0], ["end"] # 디폴트 0(처음), end(끝)
-        elif start_and_stop_list != None:
-            print("Warning. start_point_list and stop_point_list are ignored. start_and_stop_list is accepted.")
-            start_point_list, stop_point_list = self.GenerateProtocolInstance._check_start_and_stop_list(start_and_stop_list)
-        elif start_point_list == [None]:
-            start_point_list = [0]
-        elif stop_point_list == [None]:
-            stop_point_list = ["end"]
-
-        ### 전체 반복 모드 처리 (리스트 원소가 1개면 전체 반복 모드)
-        if len(repeat_list) == 1 and not len(start_point_list) == 1 and not len(stop_point_list) == 1:
-            if repeat_list[0] < 0 or 255 < repeat_list[0]:
-                raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
-            print("Entire repeat mode is on. In this mode, the repeat index is not appeared properly.")
-            start_point_list = start_point_list*repeat_list[0]
-            stop_point_list = stop_point_list*repeat_list[0]
-            repeat_list = [1]*len(start_point_list)
-
-        ### 길이 체크
-        if not len(start_point_list) == len(stop_point_list) == len(repeat_list):
-            print(len(start_point_list), len(stop_point_list), len(repeat_list))
-            raise ValueError("Start, stop, repeats list length must be the same.")
-        elif len(start_point_list) == 0:
-            raise ValueError("Start, stop, repeats list must not be empty list.")
         
-        ### 일시정지 처리
-        if not isinstance(pause, bool):
-            raise ValueError("pause must be bool.")
-        
-        ### 스케줄 셋 체크 & 처리 함수
-        speed_length_list = list(map(len, self._robot_status[discovery_group].controller_status.stepper_speed_schedule))
-        def proc_sched(x):
-            ### 스케줄 셋 체크
-            if self._robot_status[discovery_group].controller_status.stepper_speed_schedule[x] == []: # 스케줄이 비었음
-                raise ValueError("Set schedule before play.")
-            elif self._robot_status[discovery_group].controller_status.stepper_pause[x] == False: # 이전에 play 상태로 끝남
-                pass
-            
-            ### 스케줄 처리
-            for j in range(len(start_point_list)):
-                if isinstance(stop_point_list[j], str) and stop_point_list[j].lower() == "end":
-                    stop_point_list[j] = speed_length_list[x]-1 # end이면 제일 뒤에 인덱스(stop은 마지막 인덱스)
-                Utils().integer_check(start_point_list[j])
-                Utils().integer_check(stop_point_list[j])
-                Utils().integer_check(repeat_list[j])
-                if start_point_list[j] < 0 or stop_point_list[j] < 0 \
-                    or speed_length_list[x]-1 < start_point_list[j] \
-                    or speed_length_list[x]-1 < stop_point_list[j]:
-                    raise ValueError("Unavailable number. Schedule does not have that index.")
-                elif stop_point_list[j] < start_point_list[j]:
-                    raise ValueError("Start index must be less than or equal to stop index.")
-                elif repeat_list[j] < 0 or 255 < repeat_list[j]:
-                    raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
-        
-        for i in range(len(cube_ID_list)):
-            cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
-            if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
-                raise ValueError("If cube ID is all, input must not be length-above-2 list.")
-        
-        ### 큐브 ID, 스케줄 처리
-        if cube_ID_list == []:
-            raise ValueError("cube ID must not be empty list.")
-        Utils().check_same_element(cube_ID_list)
-        for i in range(len(cube_ID_list)):
-            ### 큐브 ID 처리
-            cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
-            if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
-                raise ValueError("If cube ID is all, input must not be length-above-2 list.")
-            ### 스케줄 처리
-            self.GenerateProtocolInstance._if_all_function(proc_sched, cube_ID_list[i], cube_ID_list[i] == 0xFF)
-        
-        ### status 등록 함수 
-        def reg_stat(x):
-            self._robot_status[discovery_group].controller_status.stepper_mode[x] = "point"
-            self._robot_status[discovery_group].controller_status.stepper_pause[x] = pause
-            self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[x] = start_point_list
-            self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[x] = stop_point_list
-            self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[x] = repeat_list
-            self._robot_status[discovery_group].controller_status.stepper_pause[x] = pause
-
-        ### 작동 처리 (discovery_group 처리 해야함)
-        for cube_ID_element in cube_ID_list:
-            ### status 등록
-            self.GenerateProtocolInstance._if_all_function(reg_stat, cube_ID_element, cube_ID_element == 0xFF)
-            ### 포인트 설정
-            self._write_copy(self.GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, start_point_list, stop_point_list, repeat_list, discovery_group, True, 0))
-            time.sleep(0.2)
-            #############################################확인될 때까지 잡아주는 코드 수정
-        
-        ### 작동
-        for cube_ID_element in cube_ID_list:
-            if not pause: # 재생
-                self._write_copy(self.GenerateProtocolInstance.SetPauseSteps_bytes(False, cube_ID_element, discovery_group))
-                time.sleep(0.2)
-
-
     # 모터 일시정지
     def pause_motor(self, cube_ID=None, discovery_group=None, group_mode=False) -> None:
         self._start_check_copy()
@@ -255,7 +135,7 @@ class MotorOperation():
 
         #### 그룹 모드 나중에 #############################################33
         ### 큐브 ID 처리
-        if cube_ID_list == []:
+        if cube_ID_list == [] or cube_ID_list == ():
             raise ValueError("cube ID must not be empty list.")
         Utils().check_same_element(cube_ID_list) # 같은 원소가 있으면 error
         for i in range(len(cube_ID_list)):
@@ -347,7 +227,7 @@ class MotorOperation():
         pause_list = Utils().to_list(pause_list)
 
         ### 큐브 ID 처리
-        if cube_ID_list == [] or pause_list == ():
+        if cube_ID_list == [] or cube_ID_list == ():
             raise ValueError("cube ID must not be empty list.")
         for i in range(len(cube_ID_list)):
             cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
@@ -647,25 +527,13 @@ class MotorOperation():
         def expand_bytes(*input_list):
             nonlocal cube_ID_list
             input_list_copy = list(copy.deepcopy(input_list))
-            ### 바이트 1줄
-            ### speed, pause의 길이가 1이거나 원소가 모두 같은 경우, 그리고 cube ID에 전부 있거나 all인 경우
-            one_byte_bool = True
-            for input_list_element in input_list_copy:
-                ### 길이가 1이거나 원소가 모두 같은 경우
-                one_byte_bool = one_byte_bool and (len(input_list_element) == 1 or input_list_element[1:] == input_list_element[:-1])
-            if one_byte_bool and (Utils().all_cube_in_check(cube_ID_list, connection_number) or cube_ID_list[0] == 0xFF):
-                cube_ID_list = [0xFF]
-                for i in range(len(input_list)):
-                    input_list_copy[i] = [input_list[i][0]]
-            ### 바이트 여러 줄
-            else:
-                ### all이면 모든 cube ID로 늘림
-                if cube_ID_list[0] == 0xFF:
-                    cube_ID_list = [i for i in range(connection_number)]
-                ### 길이가 1이면 run_number 개수만큼 늘림
-                for i in range(len(input_list_copy)):
-                    if len(input_list_copy[i]) == 1:
-                        input_list_copy[i] = input_list_copy[i]*run_number
+            ### all이면 모든 cube ID로 늘림
+            if cube_ID_list[0] == 0xFF:
+                cube_ID_list = [i for i in range(connection_number)]
+            ### 길이가 1이면 run_number 개수만큼 늘림
+            for i in range(len(input_list_copy)):
+                if len(input_list_copy[i]) == 1:
+                    input_list_copy[i] = input_list_copy[i]*run_number
             return input_list_copy
 
         ### list_of_list 체크 함수
@@ -714,15 +582,21 @@ class MotorOperation():
             # speed: SPS, step: STEP
             max_time = 0
             if not is_schedule:
-                for speed_element, step_element in zip(speed_list, step_list):
-                    new_time = cal_time(speed_element, step_element)
+                for i, (speed_element, step_element) in enumerate(zip(speed_list, step_list)):
+                    if pause_list[i]: # pause이면 wait 무시
+                        new_time = 0
+                    else:
+                        new_time = cal_time(speed_element, step_element)
                     if new_time > max_time:
                         max_time = new_time
             else:
                 for i in range(len(speed_list)):
-                    new_time = 0
-                    for speed_element, step_element in zip(speed_list[i], step_list[i]):
-                        new_time += cal_time(speed_element, step_element)
+                    if pause_list[i]: # pause이면 wait 무시
+                        new_time = 0
+                    else:
+                        new_time = 0
+                        for (speed_element, step_element) in zip(speed_list[i], step_list[i]):
+                            new_time += cal_time(speed_element, step_element)
                     if new_time > max_time:
                         max_time = new_time
             return max_time
@@ -759,32 +633,16 @@ class MotorOperation():
             ### 바이트 확장
             speed_list, pause_list = expand_bytes(speed_list, pause_list)
             ### 작동 처리 (discovery_group 처리 해야함)
-            ### all인 경우 (바이트 1줄)
-            if cube_ID_list[0] == 0xFF: 
-                ### 모터 정지
-                if speed_list[0] == 0: 
-                    print("Stop all motors.")
-                    pause_list[0] = True
+            sending_bytes = b""
+            for i, cube_ID_element in enumerate(cube_ID_list):
+                if speed_list[i] == 0:
+                    pause_list[i] = True # 0일 때 pause로 안 보내면 다음 명령어가 안 먹음
                 ### status 등록
-                def reg_stat(x):
-                    self._robot_status[discovery_group].controller_status.stepper_mode[x] = "continue"
-                    self._robot_status[discovery_group].controller_status.stepper_speed[x] = speed_list[0]
-                    self._robot_status[discovery_group].controller_status.stepper_pause[x] = pause_list[0]
-                self.GenerateProtocolInstance._if_all_function(reg_stat, None, True)
-                ### 동작
-                sending_bytes = self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_list[0], speed_list[0], discovery_group, pause_list[0])
-            ### all이 아닌 경우 (바이트 여러 줄)
-            else: 
-                sending_bytes = b""
-                for i, cube_ID_element in enumerate(cube_ID_list):
-                    if speed_list[i] == 0: 
-                        pause_list[i] = True
-                    ### status 등록
-                    self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "continue"
-                    self._robot_status[discovery_group].controller_status.stepper_speed[cube_ID_element] = speed_list[i]
-                    self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
-                    ### bytes 붙이기
-                    sending_bytes += self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_element, speed_list[i], discovery_group, pause_list[i])
+                self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "continue"
+                self._robot_status[discovery_group].controller_status.stepper_speed[cube_ID_element] = speed_list[i]
+                self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
+                ### bytes 붙이기
+                sending_bytes += self.GenerateProtocolInstance.SetContinuousSteps_bytes(cube_ID_element, speed_list[i], discovery_group, pause_list[i])
             if connection_number > 1:
                 sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
         ### 스텝 모드
@@ -829,28 +687,15 @@ class MotorOperation():
             if not isinstance(wait, int) and not isinstance(wait, float):
                 wait = convert_wait(False)
             ### 작동 처리 (discovery_group 처리 해야함)
-            ### all인 경우 (바이트 1줄)
-            if cube_ID_list[0] == 0xFF: 
+            sending_bytes = b""
+            for i, cube_ID_element in enumerate(cube_ID_list):
                 ### status 등록
-                def reg_stat(x):
-                    self._robot_status[discovery_group].controller_status.stepper_mode[x] = "step"
-                    self._robot_status[discovery_group].controller_status.stepper_speed[x] = speed_list[0]
-                    self._robot_status[discovery_group].controller_status.stepper_step[x] = step_list[0]
-                    self._robot_status[discovery_group].controller_status.stepper_pause[x] = pause_list[0]
-                self.GenerateProtocolInstance._if_all_function(reg_stat, None, True)
-                ### 동작
-                sending_bytes = self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_list[0], speed_list[0], step_list[0], discovery_group, pause_list[0])
-            ### all이 아닌 경우 (바이트 여러 줄)
-            else: 
-                sending_bytes = b""
-                for i, cube_ID_element in enumerate(cube_ID_list):
-                    ### status 등록
-                    self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "step"
-                    self._robot_status[discovery_group].controller_status.stepper_speed[cube_ID_element] = speed_list[i]
-                    self._robot_status[discovery_group].controller_status.stepper_step[cube_ID_element] = step_list[i]
-                    self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
-                    ### bytes 붙이기
-                    sending_bytes += self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, pause_list[i])
+                self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "step"
+                self._robot_status[discovery_group].controller_status.stepper_speed[cube_ID_element] = speed_list[i]
+                self._robot_status[discovery_group].controller_status.stepper_step[cube_ID_element] = step_list[i]
+                self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
+                ### bytes 붙이기
+                sending_bytes += self.GenerateProtocolInstance.SetSingleSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, pause_list[i])
             if connection_number > 1:
                 sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
         ### 스케줄 모드
@@ -926,34 +771,19 @@ class MotorOperation():
             if not isinstance(wait, int) and not isinstance(wait, float):
                 wait = convert_wait(True)
             ### 작동 처리 (discovery_group 처리 해야함)
-            ### all인 경우 (바이트 1줄)
-            if cube_ID_list[0] == 0xFF: 
+            sending_bytes = b""
+            for i, cube_ID_element in enumerate(cube_ID_list):
                 ### status 등록
-                def reg_stat(x):
-                    self._robot_status[discovery_group].controller_status.stepper_mode[x] = "schedule"
-                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[x] = [0]
-                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[x] = [len(speed_list[0])]
-                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[x] = [1]
-                    self._robot_status[discovery_group].controller_status.stepper_speed_schedule[x] = speed_list[0]
-                    self._robot_status[discovery_group].controller_status.stepper_step_schedule[x] = step_list[0]
-                    self._robot_status[discovery_group].controller_status.stepper_pause[x] = pause_list[0]
-                self.GenerateProtocolInstance._if_all_function(reg_stat, None, True)
-                ### 동작
-                sending_bytes = self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_list[0], speed_list[0], step_list[0], discovery_group, True)
-            ### all이 아닌 경우 (바이트 여러 줄)
-            else: 
-                sending_bytes = b""
-                for i, cube_ID_element in enumerate(cube_ID_list):
-                    ### status 등록
-                    self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "schedule"
-                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[cube_ID_element] = [0]
-                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[cube_ID_element] = [len(speed_list[i])]
-                    self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[cube_ID_element] = [1]
-                    self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element] = speed_list[i]
-                    self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element] = step_list[i]
-                    self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
-                    ### bytes 붙이기
-                    sending_bytes += self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, True)
+                self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "schedule"
+                self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[cube_ID_element] = [0]
+                self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[cube_ID_element] = [len(speed_list[i])]
+                self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[cube_ID_element] = [1]
+                self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element] = speed_list[i]
+                self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element] = step_list[i]
+                self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
+                self._robot_status[discovery_group].controller_status.stepper_schedule_sync_on[cube_ID_element] = sync
+                ### bytes 붙이기
+                sending_bytes += self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, True)
             if connection_number > 1:
                 sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
         ### 스케줄 보내기
@@ -963,14 +793,14 @@ class MotorOperation():
             while self._robot_status[discovery_group].processed_status.stepper_agg_set != True:
                 pass
             self._robot_status[discovery_group].processed_status.stepper_agg_set = False
-            if run_option.lower() == "schedule":
-                time.sleep(0.2)
-                ### 바이트 쓰기, 포인트로 작동
-                sending_bytes = b""
-                for i, cube_ID_element in enumerate(cube_ID_list):
-                    sending_bytes += self.GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, [0], [len(speed_list[i])], [1], discovery_group, pause_list[i])
-                sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
-                self._write_copy(sending_bytes) 
+        if run_option.lower() == "schedule":
+            time.sleep(0.2)
+            ### 바이트 쓰기, 포인트로 작동
+            sending_bytes = b""
+            for i, cube_ID_element in enumerate(cube_ID_list):
+                sending_bytes += self.GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, [0], [len(speed_list[i])], [1], discovery_group, pause_list[i])
+            sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
+            self._write_copy(sending_bytes)
         else:
             time.sleep(0.5)
         ### sleep
@@ -985,25 +815,251 @@ class MotorOperation():
 
 
     # 스케줄 설정
-    def set_motor_schedule(self, 
-        cube_ID_list, 
-        speed_list, 
-        step_list, 
-        pause_list=True, 
-        time_list=None, 
-        discovery_group=None, 
-        speed_option="RPM", 
-        step_option="CYCLE", 
-        sync=False, 
-        time_option=None,
+    def set_motor_schedule(self, cube_ID_list, speed_list, step_list, pause_list=True, time_list=None, \
+        discovery_group=None, speed_option="RPM", step_option="CYCLE", sync=False, time_option=None, \
         wait=0) -> None:
         self.run_motor(cube_ID_list, speed_list, step_list, pause_list, time_list, discovery_group, \
             "schedule", speed_option, step_option, sync, time_option, wait)
     
 
-    def play_motor_schedule_sync(self) -> None:
-        self._start_check_copy()
+    # 스케줄 실행
+    def play_motor_schedule(self, cube_ID_list="all", repeat_list=[[1]], start_point_list=[[None]], stop_point_list=[[None]], 
+        start_and_stop_list=[[None]], pause_list=False, discovery_group=None, sync=False, wait=0) -> None:
+        """
+        Play motors with set schedule.
+        """
+        ### 연결 개수
+        connection_number = self._robot_status[discovery_group].controller_status.connection_number
 
-        pass
-    
-    
+        ### start 체크
+        self._start_check_copy()
+        
+        ### start, stop, repeat 리스트화
+        start_point_list = Utils().to_list(start_point_list)
+        stop_point_list = Utils().to_list(stop_point_list)
+        repeat_list = Utils().to_list(repeat_list)
+        cube_ID_list = Utils().to_list(cube_ID_list)
+        pause_list = Utils().to_list(pause_list)
+        start_and_stop_list = Utils().to_list(start_and_stop_list)
+
+        ### 큐브 ID 처리
+        if cube_ID_list == [] or cube_ID_list == ():
+            raise ValueError("cube ID must not be empty list.")
+        for i in range(len(cube_ID_list)):
+            cube_ID_list[i] = self.GenerateProtocolInstance._process_cube_ID(cube_ID_list[i])
+            if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
+                raise ValueError("If cube ID is all, input must not be length-above-2 list.")
+        Utils().check_same_element(cube_ID_list) # 같은 원소가 있으면 error
+        if cube_ID_list[0] == 0xFF:
+            run_number = connection_number
+        else:
+            run_number = len(cube_ID_list)
+
+        ### 스케줄 셋 체크
+        for cube_ID_element in cube_ID_list:
+            if self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element] == []: # 스케줄이 비었음
+                raise ValueError("Set schedule before play.")
+            #elif self._robot_status[discovery_group].controller_status.stepper_pause[x] == False: # 이전에 play 상태로 끝남
+            #    pass
+
+        ### 일시정지 체크
+        if pause_list == [] or pause_list == ():
+            raise ValueError("pause_list must not be empty list (or tuple).")
+        for pause_element in pause_list:
+            if not isinstance(pause_element, bool):
+                raise ValueError("pause_list elements must be bool.")
+
+        ### 싱크 체크
+        if not isinstance(sync, bool):
+            raise ValueError("sync must be bool.")
+
+        ### wait 체크
+        if not isinstance(wait, int) and not isinstance(wait, float) and not isinstance(wait, str):
+            raise ValueError("wait must be int, float, or str.")
+        elif (isinstance(wait, int) or isinstance(wait, float)) and wait < 0:
+            raise ValueError("wait must be positive.")
+        elif isinstance(wait, str) and wait.lower() != "step" and wait.lower() != "schedule":
+            raise ValueError("Unknown wait option.")
+
+        ### wait 처리 함수
+        def convert_wait():
+            speed_list = []
+            step_list = []
+            for cube_ID_element in cube_ID_list:
+                speed_list.append(self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element])
+                speed_list.append(self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element])
+            def cal_time(speed_element, step_element):
+                if speed_element == 0:
+                    new_time_out = step_element/1000
+                else:
+                    speed_element = self.GenerateProtocolInstance.SPS_to_RPM(speed_element)/60 # RPS
+                    step_element = self.GenerateProtocolInstance.step_to_cycle(step_element)
+                    new_time_out = abs(step_element/speed_element)
+                return new_time_out
+            # speed: SPS, step: STEP
+            max_time = 0
+            for i in range(len(speed_list)):
+                if pause_list[i]: # pause이면 wait 무시
+                    new_time = 0
+                else:
+                    new_time = 0
+                    for (speed_element, step_element) in zip(speed_list[i], step_list[i]):
+                        new_time += cal_time(speed_element, step_element)
+                if new_time > max_time:
+                    max_time = new_time
+            return max_time
+        ### wait 처리
+        if isinstance(wait, str) and (wait.lower() == "step" or wait.lower() == "schedule"):
+            wait = convert_wait()
+
+        ### start_and_stop_list 변환 함수
+        def check_start_and_stop_list(start_and_stop_list_in):
+            # Ex)
+            # [[1, 2], [3, 4]]
+            # [1, 2]
+            # [[1, 2], [3, 4], [5, 6]]
+            # [2, [2, 3], 3, [4, 5]]
+            start = []
+            stop = []
+            if isinstance(start_and_stop_list_in, list) or isinstance(start_and_stop_list_in, tuple):
+                for i in range(len(start_and_stop_list_in)):
+                    if isinstance(start_and_stop_list_in[i], list) or isinstance(start_and_stop_list_in[i], tuple):
+                        if len(start_and_stop_list_in[i]) != 2:
+                            raise ValueError("If start_and_stop_list elements are list of lists (or tuple), elemental lists must be 2-length list (or tuple).")
+                        elif not isinstance(start_and_stop_list_in[i][0], int) or not isinstance(start_and_stop_list_in[i][1], int):
+                            raise ValueError("If start_and_stop_list elements are list of lists (or tuple), elemental lists must have integer elements.")
+                        else:
+                            ### list 등록
+                            start.append(start_and_stop_list_in[i][0])
+                            stop.append(start_and_stop_list_in[i][1])
+                    elif isinstance(start_and_stop_list_in[i], int):
+                        ### list 등록
+                        start.append(start_and_stop_list_in[i])
+                        stop.append(start_and_stop_list_in[i])
+                    else:
+                        raise ValueError("start_and_stop_list must have list or int elements.")
+                return start, stop
+            elif isinstance(start_and_stop_list_in, int):
+                ### list 등록
+                start = start_and_stop_list_in
+                stop = start_and_stop_list_in
+                return start, stop
+            else:
+                raise ValueError("start_and_stop_list elements must be list (or tuple), or int.")
+
+        ### 인스턴스 체크 & 디폴트 값 넣기
+        if start_point_list == [[None]] and stop_point_list == [[None]]: # 스타트, 스탑 포인트 체크
+            if start_and_stop_list != [[None]]:
+                start_point_list = []
+                stop_point_list = []
+                for start_and_stop_list_element in start_and_stop_list:
+                    if not isinstance(start_and_stop_list_element, list) and not isinstance(start_and_stop_list_element, tuple):
+                        raise ValueError("start_and_stop_list elements must be list or tuple.")
+                    start_point_list_out, stop_point_list_out = check_start_and_stop_list(start_and_stop_list_element)
+                    start_point_list.append(start_point_list_out)
+                    stop_point_list.append(stop_point_list_out)
+            else:
+                start_point_list, stop_point_list = [[0]], [["end"]] # 디폴트 0(처음), end(끝)
+        elif start_and_stop_list != [[None]]:
+            print("Warning. start_point_list and stop_point_list are ignored. start_and_stop_list is accepted.")
+            start_point_list = []
+            stop_point_list = []
+            for start_and_stop_list_element in start_and_stop_list:
+                if not isinstance(start_and_stop_list_element, list) and not isinstance(start_and_stop_list_element, tuple):
+                    raise ValueError("start_and_stop_list elements must be list or tuple.")
+                start_point_list_out, stop_point_list_out = check_start_and_stop_list(start_and_stop_list_element)
+                start_point_list.append(start_point_list_out)
+                stop_point_list.append(stop_point_list_out)
+        elif start_point_list == [[None]]:
+            start_point_list = [[0]]
+        elif stop_point_list == [None]:
+            stop_point_list = [["end"]]
+
+        ### list of list 체크
+        for start_point_list_element in start_point_list:
+            if not (isinstance(start_point_list_element, list) or isinstance(start_point_list_element, tuple)):
+                raise ValueError("All elements of start_point_list must be list or tuple.")
+        for stop_point_list_element in stop_point_list:
+            if not (isinstance(stop_point_list_element, list) or isinstance(stop_point_list_element, tuple)):
+                raise ValueError("All elements of stop_point_list must be list or tuple.")
+        for repeat_list_element in repeat_list:
+            if not (isinstance(repeat_list_element, list) or isinstance(repeat_list_element, tuple)):
+                raise ValueError("All elements of repeat_list must be list or tuple.")
+
+        ### list 길이 체크
+        if len(start_point_list) != 1 and len(start_point_list) != run_number:
+            raise ValueError("start_point_list must have the same length as cube_ID_list, or have 1 length.")
+        if len(stop_point_list) != 1 and len(stop_point_list) != run_number:
+            raise ValueError("stop_point_list must have the same length as cube_ID_list, or have 1 length.")
+        if len(repeat_list) != 1 and len(repeat_list) != run_number:
+            raise ValueError("repeat_list must have the same length as cube_ID_list, or have 1 length.")
+        if len(pause_list) != 1 and len(pause_list) != run_number:
+            raise ValueError("pause_list must have the same length as cube_ID_list, or have 1 length.")
+
+        ### 리스트 확장
+        if cube_ID_list[0] == 0xFF:
+            cube_ID_list = [i for i in range(connection_number)]
+        if len(start_point_list) == 1: # 길이가 1이면 run_number 개수만큼 늘림
+            start_point_list = Utils().list_product_copy(start_point_list, run_number)
+        if len(stop_point_list) == 1: # 길이가 1이면 run_number 개수만큼 늘림
+            stop_point_list = Utils().list_product_copy(stop_point_list, run_number)
+        if len(repeat_list) == 1: # 길이가 1이면 run_number 개수만큼 늘림
+            repeat_list = Utils().list_product_copy(repeat_list, run_number)
+        if len(pause_list) == 1: # 길이가 1이면 run_number 개수만큼 늘림
+            pause_list = pause_list*run_number
+        
+        ### 원소 길이 체크
+        for start_point_list_element, stop_point_list_element, repeat_list_element in zip(start_point_list, stop_point_list, repeat_list):
+            if len(start_point_list_element) != len(stop_point_list_element) or \
+                len(start_point_list_element) != len(repeat_list_element):
+                raise ValueError("Start list number, stop list, and repeat list number must be the same.")
+                    
+        ### sync 모드 체크
+        if sync:
+            if not self._robot_status[discovery_group].controller_status.stepper_schedule_sync_on[cube_ID_element]:
+                raise ValueError("In sync mode, set schedule must be in sync mode.")
+            else:
+                for start_point_list_element, stop_point_list_element in zip(start_point_list, stop_point_list):
+                    if start_point_list_element != start_point_list[0] or \
+                        stop_point_list_element != stop_point_list_element[0]:
+                        raise ValueError("In sync mode, each point schedule must be the same.")
+        
+        ### 스케줄 셋 체크 
+        speed_length_list = list(map(len, self._robot_status[discovery_group].controller_status.stepper_speed_schedule))
+        for i, cube_ID_element in enumerate(cube_ID_list):
+            for j in range(len(start_point_list[i])):
+                if isinstance(stop_point_list[i][j], str) and stop_point_list[i][j].lower() == "end":
+                    stop_point_list[i][j] = speed_length_list[cube_ID_element]-1 # end이면 제일 뒤에 인덱스(stop은 마지막 인덱스)
+                Utils().integer_check(start_point_list[i][j])
+                Utils().integer_check(stop_point_list[i][j])
+                Utils().integer_check(repeat_list[i][j])
+                if start_point_list[i][j] < 0 or stop_point_list[i][j] < 0 \
+                    or speed_length_list[cube_ID_element]-1 < start_point_list[i][j] \
+                    or speed_length_list[cube_ID_element]-1 < stop_point_list[i][j]:
+                    raise ValueError("Unavailable point index. Schedule does not have that index.")
+                elif stop_point_list[i][j] < start_point_list[i][j]:
+                    raise ValueError("Start index must be less than or equal to stop index.")
+                if repeat_list[i][j] < 0 or 255 < repeat_list[i][j]:
+                    raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
+
+        ### 작동 처리 (discovery_group 처리 해야함)
+        sending_bytes = b""
+        for i, cube_ID_element in enumerate(cube_ID_list):
+            ### status 등록
+            self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "point"
+            self._robot_status[discovery_group].controller_status.stepper_pause[cube_ID_element] = pause_list[i]
+            self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[cube_ID_element] = start_point_list[i]
+            self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[cube_ID_element] = stop_point_list[i]
+            self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[cube_ID_element] = repeat_list[i]
+            ### 포인트 설정
+            sending_bytes += self.GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, start_point_list[i], stop_point_list[i], repeat_list[i], discovery_group, pause_list[i])
+        
+        ### 바이트 쓰기, 작동
+        if connection_number > 1:
+            sending_bytes = self.GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
+        self._write_copy(sending_bytes)
+
+        ### sleep
+        if wait != 0:
+            time.sleep(wait + 0.3)
+        time.sleep(0.2)

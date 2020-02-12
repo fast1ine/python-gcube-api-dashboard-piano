@@ -14,7 +14,7 @@ while not keyboard.is_pressed("q"):
     elif keyboard.is_pressed("down"):
         PingPongThreadInstance.run_motor(cube_ID, [-30, -30]) # 모터 돌림 (컨티뉴 모드)
     elif keyboard.is_pressed("space"):
-        PingPongThreadInstance.run_motor(cube_ID, [0, 3]) # 모터 돌림 (컨티뉴 모드)
+        PingPongThreadInstance.run_motor(cube_ID, [0, 0]) # 모터 돌림 (컨티뉴 모드)
 
 motor_speed = "stop"
 PingPongThreadInstance.run_motor(cube_ID, motor_speed) # 모터 끔

@@ -1,9 +1,8 @@
-from utils import Utils
+from byteutils import ByteUtils
 
 class MusicProtocol():
     def __init__(self, number):
         self.connection_number = number
-
 
     def _set_discovery_group(self, hexlist, discovery_group):
         ### set discovery group ID (1 to 8)
@@ -51,7 +50,7 @@ class MusicProtocol():
             ### play protocol
             hexlist[10] = 0
         ### set data size (stepper)
-        hexlist[7:9] = Utils().int_to_hexlist(11 + 3*len(pianokey_list), 2)
+        hexlist[7:9] = ByteUtils().int_to_hexlist(11 + 3*len(pianokey_list), 2)
         ### PianoKeyInEqualTemperedScaleE ?
         #hexlist[9] = 0 
         ### set pianokey, duration, rest
@@ -72,7 +71,7 @@ class MusicProtocol():
         for i in range(len(in_bytes)):
             total_length = total_length + len(in_bytes[i])
         ### set total data size
-        hexlist[7:9] = Utils().int_to_hexlist(11 + total_length, 2) 
+        hexlist[7:9] = ByteUtils().int_to_hexlist(11 + total_length, 2) 
         ### attatch in_bytes
         for i in range(len(in_bytes)):
             hexlist.extend(list(in_bytes[i]))

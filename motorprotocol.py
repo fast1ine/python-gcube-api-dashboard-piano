@@ -1,4 +1,4 @@
-from utils import Utils
+from byteutils import ByteUtils
 
 class MotorProtocol():
     def __init__(self, number):
@@ -46,43 +46,8 @@ class MotorProtocol():
 
     def _SPS_to_hexlist(self, speed: int, n: int) -> list:
         """convert SPS to unsigned 16 hex list with n bytes"""
-        unsigned_speed = Utils().unsigned16(speed)
-        return Utils().int_to_hexlist(unsigned_speed, n)
-
-    def _check_start_and_stop_list(self, start_and_stop_list: list or int) -> (list, list) or (int, int):
-        # Ex)
-        # [[1, 2], [3, 4]]
-        # [1, 2]
-        # [[1, 2], [3, 4], [5, 6]]
-        # [2, [2, 3], 3, [4, 5]]
-        start = []
-        stop = []
-        if isinstance(start_and_stop_list, list) or isinstance(start_and_stop_list, tuple):
-            for i in range(len(start_and_stop_list)):
-                if isinstance(start_and_stop_list[i], list) or isinstance(start_and_stop_list[i], tuple):
-                    if len(start_and_stop_list[i]) != 2:
-                        raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must be 2-length list (or tuple).")
-                    elif not isinstance(start_and_stop_list[i][0], int) or not isinstance(start_and_stop_list[i][1], int):
-                        #print(start_and_stop_list[0], start_and_stop_list[1])
-                        raise ValueError("If start_and_stop_list is list of lists (or tuple), elemental list must have integer elements.")
-                    else:
-                        ### list 등록
-                        start.append(start_and_stop_list[i][0])
-                        stop.append(start_and_stop_list[i][1])
-                elif isinstance(start_and_stop_list[i], int):
-                    ### list 등록
-                    start.append(start_and_stop_list[i])
-                    stop.append(start_and_stop_list[i])
-                else:
-                    raise ValueError("start_and_stop_list must have list or int elements.")
-            return start, stop
-        elif isinstance(start_and_stop_list, int):
-            ### list 등록
-            start = start_and_stop_list
-            stop = start_and_stop_list
-            return start, stop
-        else:
-            raise ValueError("start_and_stop_list must be list (or tuple), or int.")
+        unsigned_speed = ByteUtils().unsigned16(speed)
+        return ByteUtils().int_to_hexlist(unsigned_speed, n)
 
     def RPM_to_SPS(self, RPM: float) -> int or None:
         if 3 <= RPM and RPM <= 30:
@@ -225,7 +190,7 @@ class MotorProtocol():
         ### set start phase
         #hexlist[15:17] = [0, 0] 
         ### set step value (0 to 65535, [2000 = 1 cycle])
-        hexlist[17:19] = Utils().int_to_hexlist(round(step), 2) 
+        hexlist[17:19] = ByteUtils().int_to_hexlist(round(step), 2) 
         return bytes(hexlist)
 
     def SetScheduledSteps_bytes(self, cube_ID, speed_seq_list, step_seq_list, discovery_group=None, pause=False, \
@@ -237,10 +202,10 @@ class MotorProtocol():
         hexlist = self._generic_stepper_hexlist(hexlist, cube_ID, discovery_group, pause) 
         if step_type == 0: 
             ### set data size (stepper)
-            hexlist[7:9] = Utils().int_to_hexlist(15 + 4*len(speed_seq_list), 2)
+            hexlist[7:9] = ByteUtils().int_to_hexlist(15 + 4*len(speed_seq_list), 2)
         elif step_type == 4:
             ### set data size (servo)
-            hexlist[7:9] = Utils().int_to_hexlist(15 + 6*len(speed_seq_list), 2)
+            hexlist[7:9] = ByteUtils().int_to_hexlist(15 + 6*len(speed_seq_list), 2)
         ### step type (0: FullSteps, 4: SetServo)
         hexlist[11] = step_type 
         ### CRC16 
@@ -251,14 +216,14 @@ class MotorProtocol():
                 ### set speed schedule
                 hexlist.extend(self._SPS_to_hexlist(round(speed_seq_list[i]), 2))
                 ### set step schedule (if speed = 0, sleep [step] ms.)
-                hexlist.extend(Utils().int_to_hexlist(round(step_seq_list[i]), 2))
+                hexlist.extend(ByteUtils().int_to_hexlist(round(step_seq_list[i]), 2))
         elif step_type == 4: 
             ### Servo mode
             for i in range(len(speed_seq_list)):
                 ### set speed schedule
                 hexlist.extend(self._SPS_to_hexlist(round(speed_seq_list[i]), 2))
                 ### set step schedule
-                hexlist.extend(Utils().int_to_hexlist(round(step_seq_list[i]), 2))
+                hexlist.extend(ByteUtils().int_to_hexlist(round(step_seq_list[i]), 2))
                 ### set servo angle (0 to 180 deg)
                 hexlist.append(servo_angle_list[i])
                 ### set servo timeout (1 to 255 sec, 0 for 21.845 min)
@@ -273,16 +238,16 @@ class MotorProtocol():
         ### generic process (cube ID & robot number & pause protocol)
         hexlist = self._generic_stepper_hexlist(hexlist, cube_ID, discovery_group, pause) 
         ### set data size
-        hexlist[7:9] = Utils().int_to_hexlist(15 + 5*len(start_point_list), 2) 
+        hexlist[7:9] = ByteUtils().int_to_hexlist(15 + 5*len(start_point_list), 2) 
         ### step type (0: FullSteps, 4: SetServo)
         hexlist[11] = step_type 
         ### CRC16 
         #hexlist[13:15] = [0, 0]
         for i in range(len(start_point_list)):
             ### set start point of schedule
-            hexlist.extend(Utils().int_to_hexlist(start_point_list[i], 2))
+            hexlist.extend(ByteUtils().int_to_hexlist(start_point_list[i], 2))
             ### set stop point of schedule
-            hexlist.extend(Utils().int_to_hexlist(stop_point_list[i], 2))
+            hexlist.extend(ByteUtils().int_to_hexlist(stop_point_list[i], 2))
             ### set repeat time of schedule
             hexlist.append(repeat_list[i])
         return bytes(hexlist)
@@ -291,7 +256,6 @@ class MotorProtocol():
         """step motor command to master robot"""
         ### FF FF 01 AA 10 00 CD 00 12 02 00 00 00 ~
         hexlist = [0xFF, 0xFF, 0x01, 0xAA, 0x10, 0x00, 0xCD, 0x00, 0x12, 0x02, 0x00, 0x00, 0x00]
-
         ### set discovery group ID (0 to 8)
         hexlist = self._set_discovery_group(hexlist, discovery_group)
         ### set connection number
@@ -302,7 +266,7 @@ class MotorProtocol():
         for i in range(in_bytes_length):
             total_length = total_length + len(in_bytes[i])
         ### set data number
-        hexlist[7:9] = Utils().int_to_hexlist(13 + total_length, 2) 
+        hexlist[7:9] = ByteUtils().int_to_hexlist(13 + total_length, 2) 
         if in_bytes[0][6] == 0xCC:
             ### Continuous Steps
             hexlist[10] = 0

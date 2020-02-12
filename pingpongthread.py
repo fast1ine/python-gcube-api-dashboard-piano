@@ -196,6 +196,7 @@ class ControllerStatus():
         self.stepper_step = [None]*connection_number
         self.stepper_speed_schedule = [[]]*connection_number
         self.stepper_step_schedule = [[]]*connection_number
+        self.stepper_schedule_sync_on = [None]*connection_number
         self.stepper_schedule_point_start = [[]]*connection_number
         self.stepper_schedule_point_end = [[]]*connection_number
         self.stepper_schedule_point_repeat = [[]]*connection_number
