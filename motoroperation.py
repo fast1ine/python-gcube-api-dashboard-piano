@@ -115,11 +115,9 @@ class MotorOperation():
                 ### pause=True 상태로 스케줄 설정
                 self._write_copy(self.GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_element, speed_list, step, discovery_group, True))
                 time.sleep(0.2)
-                #############################################확인될 때까지 잡아주는 코드 수정
                 ### 포인트로 설정
                 self._write_copy(self.GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, [0], [len(speed_list)], [1], discovery_group, True))
                 time.sleep(0.2)
-                #############################################확인될 때까지 잡아주는 코드 수정
             ### 재생
             if not pause:
                 for cube_ID_element in cube_ID_list:
@@ -368,6 +366,7 @@ class MotorOperation():
 
         ### sync 체크 함수 (time_option이 none일 때 사용, limit과 확장 이후)
         def check_time_sync_none(is_schedule, speed_list_in, step_list_in):
+            len_changed = False
             if sync and run_number > 1:
                 ### 스텝 모드 (speed: SPS, step: STEP)
                 if not is_schedule:
@@ -405,6 +404,7 @@ class MotorOperation():
                                 raise ValueError("Schedule is not syncronous. Time offset of each schedule must be less than 0.001 sec.")
                             offset_list[i] += offset
                             if offset_list[i] > 0.001:
+                                len_changed = True
                                 if not offset_flag:
                                     for k in range(len(speed_list_in)):
                                         speed_list_in[k].insert(j+1, 0)
@@ -413,6 +413,7 @@ class MotorOperation():
                                 step_list_in[i][j+1] += 1 # 1 ms
                                 offset_list[i] -= 0.001
                             elif offset_list[i] < -0.001:
+                                len_changed = True
                                 if not offset_flag:
                                     for k in range(len(speed_list_in)):
                                         speed_list_in[k].insert(j+1, 0)
@@ -426,6 +427,10 @@ class MotorOperation():
                         else:
                             j += 1
                         offset_flag = False
+            if len_changed:
+                print("Warning. speed_list and step list length have changed due to time offset.")
+                print("speed_list(in SPS):", speed_list_in)
+                print("step_list(in STEP):", step_list_in)
             return speed_list_in, step_list_in
 
         ### time_list 변환 함수
@@ -881,37 +886,6 @@ class MotorOperation():
         elif isinstance(wait, str) and wait.lower() != "step" and wait.lower() != "schedule":
             raise ValueError("Unknown wait option.")
 
-        ### wait 처리 함수
-        def convert_wait():
-            speed_list = []
-            step_list = []
-            for cube_ID_element in cube_ID_list:
-                speed_list.append(self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element])
-                speed_list.append(self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element])
-            def cal_time(speed_element, step_element):
-                if speed_element == 0:
-                    new_time_out = step_element/1000
-                else:
-                    speed_element = self.GenerateProtocolInstance.SPS_to_RPM(speed_element)/60 # RPS
-                    step_element = self.GenerateProtocolInstance.step_to_cycle(step_element)
-                    new_time_out = abs(step_element/speed_element)
-                return new_time_out
-            # speed: SPS, step: STEP
-            max_time = 0
-            for i in range(len(speed_list)):
-                if pause_list[i]: # pause이면 wait 무시
-                    new_time = 0
-                else:
-                    new_time = 0
-                    for (speed_element, step_element) in zip(speed_list[i], step_list[i]):
-                        new_time += cal_time(speed_element, step_element)
-                if new_time > max_time:
-                    max_time = new_time
-            return max_time
-        ### wait 처리
-        if isinstance(wait, str) and (wait.lower() == "step" or wait.lower() == "schedule"):
-            wait = convert_wait()
-
         ### start_and_stop_list 변환 함수
         def check_start_and_stop_list(start_and_stop_list_in):
             # Ex)
@@ -924,9 +898,11 @@ class MotorOperation():
             if isinstance(start_and_stop_list_in, list) or isinstance(start_and_stop_list_in, tuple):
                 for i in range(len(start_and_stop_list_in)):
                     if isinstance(start_and_stop_list_in[i], list) or isinstance(start_and_stop_list_in[i], tuple):
-                        if len(start_and_stop_list_in[i]) != 2:
-                            raise ValueError("If start_and_stop_list elements are list of lists (or tuple), elemental lists must be 2-length list (or tuple).")
-                        elif not isinstance(start_and_stop_list_in[i][0], int) or not isinstance(start_and_stop_list_in[i][1], int):
+                        if len(start_and_stop_list_in[i]) == 1:
+                            start_and_stop_list_in[i] *= 2
+                        elif len(start_and_stop_list_in[i]) != 2:
+                            raise ValueError("If start_and_stop_list elements are list of lists (or tuple), elemental lists must be 1 or 2-length list (or tuple).")
+                        if not isinstance(start_and_stop_list_in[i][0], int) or not isinstance(start_and_stop_list_in[i][1], int):
                             raise ValueError("If start_and_stop_list elements are list of lists (or tuple), elemental lists must have integer elements.")
                         else:
                             ### list 등록
@@ -1041,6 +1017,39 @@ class MotorOperation():
                     raise ValueError("Start index must be less than or equal to stop index.")
                 if repeat_list[i][j] < 0 or 255 < repeat_list[i][j]:
                     raise ValueError("Unavailable number. Repeat must be positive, or smaller than 256.")
+
+        ### wait 처리 함수
+        def convert_wait():
+            def cal_time(speed_element, step_element):
+                if speed_element == 0:
+                    new_time_out = step_element/1000
+                else:
+                    speed_element = self.GenerateProtocolInstance.SPS_to_RPM(speed_element)/60 # RPS
+                    step_element = self.GenerateProtocolInstance.step_to_cycle(step_element)
+                    new_time_out = abs(step_element/speed_element)
+                return new_time_out
+            # speed: SPS, step: STEP
+            speed_list = []
+            step_list = []
+            for cube_ID_element in cube_ID_list:
+                speed_list.append(self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element])
+                speed_list.append(self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element])
+            ### max time 계산
+            max_time = 0
+            for i in range(len(start_point_list)): # i: cube ID 인덱스
+                if pause_list[i]: # pause이면 wait 무시
+                    new_time = 0
+                else:
+                    new_time = 0
+                    for j in range(len(start_point_list[i])): # j: 포인트 인덱스
+                        for k in range(start_point_list[i][j], stop_point_list[i][j]+1): # k: 스피드, 스텝 인덱스, +1은 마지막 인덱스 포함 때문.
+                            new_time += cal_time(speed_list[i][k], step_list[i][k])
+                if new_time > max_time:
+                    max_time = new_time
+            return max_time
+        ### wait 처리
+        if isinstance(wait, str) and (wait.lower() == "step" or wait.lower() == "schedule"):
+            wait = convert_wait()
 
         ### 작동 처리 (discovery_group 처리 해야함)
         sending_bytes = b""
