@@ -1,7 +1,6 @@
 from serialprotocol import Protocol
 from utils import Utils
 from processprotocol import ProcessProtocol
-from generateprotocol import GenerateProtocol
 import time
 
 # 프로토콜
