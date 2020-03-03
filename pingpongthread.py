@@ -2,13 +2,15 @@
 # pyserial==3.4
 
 from serialprotocol import ReaderThread
+from connectionutils import ConnectionUtils
 from utils import Utils
 from rawprotocol import rawProtocol
 from generateprotocol import GenerateProtocol
 from motoroperation import MotorOperation
+from robotstatus import RobotStatus
 import sys
 import time
-import serial
+#import serial
 
 class PingPongThread(ReaderThread, MotorOperation):
     _is_instance = False
@@ -22,9 +24,9 @@ class PingPongThread(ReaderThread, MotorOperation):
             raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
         if not PingPongThread._is_instance:
             PingPongThread._is_instance = True # 인스턴스 생성 확인
-            self.GenerateProtocolInstance = GenerateProtocol(number) # GenrateProtocol instance 생성
-            MotorOperation.__init__(self, self.GenerateProtocolInstance, self._robot_status, self._start_check, self._write) # MotorOperation 초기화
-            self.PORT = Utils().find_bluetooth_dongle(self.GenerateProtocolInstance.DongleInAction_bytes()) # 동글 포트 찾기
+            self._GenerateProtocolInstance = GenerateProtocol(number) # GenrateProtocol instance 생성
+            MotorOperation.__init__(self, number, self._robot_status, self._start_check, self._write) # MotorOperation 초기화
+            self.PORT = ConnectionUtils().find_bluetooth_dongle(self._GenerateProtocolInstance.DongleInAction_bytes()) # 동글 포트 찾기
             self._play_once_flag = True
         else:
             raise ValueError("PingpongThread instance cannot be constructed above 1.")
@@ -45,14 +47,14 @@ class PingPongThread(ReaderThread, MotorOperation):
     def _connect_robot_thread(self) -> None:
         ser = None
         while True:
-            ser = Utils().connect_serial_URL(self.PORT)
+            ser = ConnectionUtils().connect_serial_URL(self.PORT)
             if ser:
                 break
             else:
-                self.PORT = Utils().find_bluetooth_dongle(self.GenerateProtocolInstance.DongleInAction_bytes())
+                self.PORT = ConnectionUtils().find_bluetooth_dongle(self._GenerateProtocolInstance.DongleInAction_bytes())
         ReaderThread.__init__(self, ser, rawProtocol)
         ReaderThread.start(self)
-        self._write(self.GenerateProtocolInstance.PingPongGn_connect_bytes())
+        self._write(self._GenerateProtocolInstance.PingPongGn_connect_bytes())
 
     # 쓰기
     def _write(self, protocol_bytes) -> None:
@@ -93,7 +95,7 @@ class PingPongThread(ReaderThread, MotorOperation):
         ################################# discovery_group 처리 해야함
         def discon_op(x):
             if self._robot_status[x].processed_status.connected_number > 0:
-                    self._write(self.GenerateProtocolInstance.PingPong_disconnect_bytes)
+                    self._write(self._GenerateProtocolInstance.PingPong_disconnect_bytes)
                     time.sleep(2) # 응답 기다림
                     self.set_robot_disconnect_flag(True)
                     print("Disconnect master robot.")
@@ -113,7 +115,7 @@ class PingPongThread(ReaderThread, MotorOperation):
         print("Reconnect with robots.")
         #self.ReaderThreadInstance.serial.close()
         #self.ReaderThreadInstance.reconnect()
-        self._write(self.GenerateProtocolInstance.PingPongGn_connect_bytes())
+        self._write(self._GenerateProtocolInstance.PingPongGn_connect_bytes())
 
     def get_is_start(self) -> bool:
         if PingPongThread._is_start: # copy
@@ -160,14 +162,14 @@ class PingPongThread(ReaderThread, MotorOperation):
         if not (isinstance(RPM, float) or isinstance(RPM, int)):
             raise ValueError("RPM must be float or int value")
         else:
-            return self.GenerateProtocolInstance.RPM_to_SPS(RPM)
+            return self._GenerateProtocolInstance.RPM_to_SPS(RPM)
 
     # SPS를 RPM으로 변환
     def SPS_to_RPM(self, SPS):
         if not isinstance(SPS, int):
             raise ValueError("SPS must be int value")
         else:
-            return self.GenerateProtocolInstance.RPM_to_SPS(SPS)
+            return self._GenerateProtocolInstance.RPM_to_SPS(SPS)
 
     # time_seconds 초 동안 기다림
     def wait(self, time_seconds):
@@ -177,42 +179,8 @@ class PingPongThread(ReaderThread, MotorOperation):
             raise ValueError("time_seconds must positive value.")
         time.sleep(time_seconds)
 
+    # MotorOperation 오버라이딩
 
-
-### 상태 저장용 구조체
-class RobotStatus():
-    def __init__(self, connection_number, discovery_group=None):
-        self.controller_status = ControllerStatus(connection_number, discovery_group)
-        self.processed_status = ProcessedStatus(connection_number)
-class ControllerStatus():
-    def __init__(self, connection_number, discovery_group):
-        ### discovery group, connection status
-        self.discovery_group = discovery_group
-        self.connection_number = connection_number
-        ### stepper status
-        self.stepper_mode = [None]*connection_number
-        self.stepper_pause = [None]*connection_number
-        self.stepper_speed = [None]*connection_number
-        self.stepper_step = [None]*connection_number
-        self.stepper_speed_schedule = [[]]*connection_number
-        self.stepper_step_schedule = [[]]*connection_number
-        self.stepper_schedule_sync_on = [None]*connection_number
-        self.stepper_schedule_point_start = [[]]*connection_number
-        self.stepper_schedule_point_end = [[]]*connection_number
-        self.stepper_schedule_point_repeat = [[]]*connection_number
-class ProcessedStatus():
-    def __init__(self, connection_number):
-        ### connection status
-        self.connected_number = 0
-        self.MAC_address = [None]*2
-        ### stepper status
-        self.stepper_agg_set = None
-        self.stepper_schedule_set = [None]*connection_number
-        self.stepper_point_set = [None]*connection_number
-        self.stepper_played_pause = [None]*connection_number
-        self.stepper_played_schedule_idx = [None]*connection_number
-        self.stepper_played_point_idx = [None]*connection_number
-        self.stepper_played_repeat_idx = [None]*connection_number
 
 
 """

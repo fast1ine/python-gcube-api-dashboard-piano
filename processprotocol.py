@@ -2,12 +2,12 @@ import time
 from utils import Utils
 
 class ProcessProtocol():
-    def __init__(self):
-        self.buffer = b""
-        self.buffer_size = 0
-        self.is_full_connect = False
-        self.robot_disconnect_flag = False
-        self.transport = None
+    def __init__(self, buffer, buffer_size, is_full_connect, robot_disconnect_flag, transport):
+        self.buffer = buffer
+        self.buffer_size = buffer_size
+        self.is_full_connect = is_full_connect
+        self.robot_disconnect_flag = robot_disconnect_flag
+        self.transport = transport
 
     # 연결 평가
     def evaluate_connection(self, discovery_group=None) -> None: 

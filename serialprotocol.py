@@ -3,6 +3,7 @@ from abc import ABCMeta
 import serial
 import threading
 import time
+from connectionutils import ConnectionUtils
 from utils import Utils
 from generateprotocol import GenerateProtocol
 
@@ -140,8 +141,8 @@ class ReaderThread(threading.Thread):
         #print("reconnect")
         connection_number = self.get_connection_number()
         try:
-            PORT = Utils().find_bluetooth_dongle(GenerateProtocol(connection_number).DongleInAction_bytes())
-            self.serial = Utils().connect_serial_URL(PORT)
+            PORT = ConnectionUtils().find_bluetooth_dongle(GenerateProtocol(connection_number).DongleInAction_bytes())
+            self.serial = ConnectionUtils().connect_serial_URL(PORT)
             self.write(GenerateProtocol(connection_number).PingPongGn_connect_bytes())
             self.alive = True
         except Exception as error:

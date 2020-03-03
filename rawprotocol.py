@@ -6,12 +6,13 @@ import time
 # 프로토콜
 class rawProtocol(Protocol, ProcessProtocol):
     def __init__(self):
-        ProcessProtocol.__init__(self)
         self.init_buffer()
         self.set_timeout()
         self.is_full_connect = False
         self.robot_disconnect_flag = False
         self.is_point_set = False
+        self.transport = None
+        ProcessProtocol.__init__(self, self.buffer, self.buffer_size, self.is_full_connect, self.robot_disconnect_flag, self.transport) # 여기 변수들은 ProcessProtocol 멤버 변수와 자동으로 동기화 됨.
 
     # 버퍼 초기화
     def init_buffer(self) -> None:
@@ -36,9 +37,7 @@ class rawProtocol(Protocol, ProcessProtocol):
 
     # 연결 시작시 발생
     def connection_made(self, transport) -> None:
-        self.transport = transport # transport 설정
-        #ProcessProtocol.transport = transport
-        #self.init_is_point_and_schedule_set()
+        self.transport = transport # transport 설정, ReaderThread의 instance를 가져옴.
         self.running = True
         print("Serial connected.")
 
@@ -46,7 +45,6 @@ class rawProtocol(Protocol, ProcessProtocol):
     def connection_lost(self, exc) -> None:
         self.transport._init_robot_status("all")
         self.set_is_full_connect(False)
-        #self.init_is_point_and_schedule_set()
         try:
             self.transport.serial.close() # serial 연결 종료
         except:
