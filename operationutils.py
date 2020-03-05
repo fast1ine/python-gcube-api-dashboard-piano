@@ -1,23 +1,13 @@
 import copy
 
-class OperationUtils():
-    # 리스트로 변환
-    def to_list(self, input_data) -> list:
-        if isinstance(input_data, list) or isinstance(input_data, tuple):
-            return list(input_data)
-        elif isinstance(input_data, int) or isinstance(input_data, float) \
-            or isinstance(input_data, str) or isinstance(input_data, bool) or input_data == None:
-            return [input_data]
-        else:
-            raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or bool, or None.")
-
-    # 같은 원소가 있는지 확인
+class OperationUtilsCheck():
+    ### 리스트에 같은 원소가 있는지 확인
     def check_same_element(self, input_list) -> None:
         for i in range(len(input_list)-1):
             if input_list[i] in input_list[i+1:]:
                 raise ValueError("All elements must be different each other in list.")
 
-    # 실수 체크
+    ### 실수 체크
     def float_check(self, number, option=None) -> None:
         if not (isinstance(number, int) or isinstance(number, float)):
             is_float = False
@@ -29,7 +19,7 @@ class OperationUtils():
             else:
                 raise ValueError("Please enter float number!")
 
-    #  정수 체크
+    ###  정수 체크
     def integer_check(self, number, option=None) -> None:
         if not isinstance(number, int):
             is_integer = False
@@ -41,55 +31,100 @@ class OperationUtils():
             else:
                 raise ValueError("Please enter integer number!")
 
-    ### 리스트 포인터(id)를 다르게 복사
-    def list_product_copy(self, input_list, number) -> list:
-        input_list = input_list[0] # ex) [[2, 3, 4, 5]]
-        out_list = [] # ex) number=3, [[2, 3, 4, 5], [2, 3, 4, 5], [2, 3, 4, 5]]
-        i = 0
-        while i < number:
-            new_list = [0]*len(input_list)
-            for j in range(len(input_list)):
-                new_list[j] = input_list[j]
-            out_list.append(new_list)
-            i += 1
-        return out_list
+    ### pause 리스트 체크
+    def check_pause_list(self, pause_list):
+        if pause_list == [] or pause_list == ():
+            raise ValueError("pause_list must not be empty list (or tuple).")
+        for pause in pause_list:
+            if not isinstance(pause, bool):
+                raise ValueError("pause_list elements must be bool.")
 
-    ### RPM을 SPS로 변환
-    def RPM_to_SPS(self, RPM: float) -> int or None:
-        if 3 <= RPM and RPM <= 30:
-            SPS = 50*(-60/RPM+22)
-        elif -30 <= RPM and RPM <= -3:
-            SPS = 50*(-60/RPM-22)
-        elif RPM == 0:
-            SPS = 0
+    ### speed 옵션 체크
+    def check_speed_option(self, speed_option):
+        if not isinstance(speed_option, str):
+            raise ValueError("speed_option must be str.")
+        elif speed_option.upper() != "RPM" and speed_option.upper() != "SPS":
+            raise ValueError("Unknown speed_option.")
+
+    ### step 옵션 체크
+    def check_step_option(self, step_option):
+        if not isinstance(step_option, str):
+            raise ValueError("step_option must be str.")
+        elif step_option.upper() != "CYCLE" and step_option.upper() != "STEP":
+            raise ValueError("Unknown step_option.")
+
+    ### sync 옵션 체크
+    def check_sync_option(self, sync):
+        if not isinstance(sync, bool):
+            raise ValueError("sync must be bool.")
+
+    ### wait 체크
+    def check_wait(self, wait, run_option):
+        if run_option == "continue":
+            if not isinstance(wait, int) and not isinstance(wait, float):
+                raise ValueError("wait must be int or float in continue mode.")
+            elif wait < 0:
+                raise ValueError("wait must be positive.")
         else:
-            print("Warning: RPM must be between +-3 to +- 30, or 0.")
-            return None
-        return round(SPS) # -1000 to 1000
+            if not isinstance(wait, int) and not isinstance(wait, float) and not isinstance(wait, str):
+                raise ValueError("wait must be int, float, or str.")
+            elif (isinstance(wait, int) or isinstance(wait, float)) and wait < 0:
+                raise ValueError("wait must be positive.")
+            elif isinstance(wait, str) and wait.lower() != "step" and wait.lower() != "schedule":
+                raise ValueError("Unknown wait option.")
 
-    ### SPS를 RPM으로 변환
-    def SPS_to_RPM(self, SPS: int) -> float or None:
-        if 100 <= SPS and SPS <= 1000:
-            RPM = 60/(-SPS/50+22)
-        elif -1000 <= SPS and SPS <= 100:
-            RPM = -60/(SPS/50+22)
-        elif SPS == 0:
-            RPM = 0
+    ### 길이 체크
+    def len_check(self, input_list, cube_ID_list, connection_number, mode_name, list_name, run_number, run_option):
+        if run_option != "point":
+            if cube_ID_list[0] != 0xFF:
+                if len(input_list) != 1 and len(input_list) != len(cube_ID_list):
+                    raise ValueError("In {} mode, {} must have the same length as cube_ID_list, or have 1 length.".format(mode_name, list_name))
+            elif len(input_list) != connection_number and len(input_list) != 1:
+                raise ValueError("In {} mode with all cube IDs, {} must have the same length as connection number, or have 1 length.".format(mode_name, list_name))
         else:
-            print("Warning: SPS must be between +-100 to +- 1000, or 0.")
-            RPM = None  
-        return RPM # -300 to 300
+            if len(input_list) != 1 and len(input_list) != run_number:
+                raise ValueError("{} must have the same length as cube_ID_list, or have 1 length.".format(list_name))
 
-    ### cycle을 step으로 변환
-    def cycle_to_step(self, cycle) -> int:
-        step = cycle*2000
-        return round(step)
+    ### list_of_list 체크 함수
+    def check_list_of_list(self, input_list, mode_name, list_name, run_option):
+        if run_option.lower != "point":
+            for input_list_element in input_list:
+                if not (isinstance(input_list_element, list) or isinstance(input_list_element, tuple)):
+                    raise ValueError("In {} mode, all elements of {} must be list or tuple.".format(mode_name, list_name)) 
+        else:
+            for input_list_element in input_list:
+                if not (isinstance(input_list_element, list) or isinstance(input_list_element, tuple)):
+                    raise ValueError("All elements of {} must be list or tuple.".format(list_name))
 
-    ### step을 cycle로 변환
-    def step_to_cycle(self, step) -> float:
-        cycle = step/2000
-        return cycle
+    ### 내부 원소 리스트 길이 체크 함수
+    def len_check_elemental_list(self, input_list1, input_list2, mode_name, input_list1_name, input_list2_name):
+        error_str = "In {} mode, each length of elements of {} and {} must be equal.".format(mode_name, input_list1_name, input_list2_name)
+        if len(input_list1) == 1:
+            for input_list2_element in input_list2:
+                if len(input_list2_element) != len(input_list1[0]):
+                    raise ValueError(error_str)
+        elif len(input_list2) == 1:
+            for input_list1_element in input_list1:
+                if len(input_list1_element) != len(input_list2[0]):
+                    raise ValueError(error_str)
+        else:
+            for input_list1_element, input_list2_element in zip(input_list1, input_list2):
+                if len(input_list1_element) != len(input_list2_element):
+                    raise ValueError(error_str)
 
+    ### sync 모드 내부 원소 길이 체크 함수
+    def len_check_elemental_list_in_sync(self, sync, input_list1, input_list2, mode_name, input_list1_name, input_list2_name):
+        if sync:
+            error_str = "In {} mode, each length of elements of {} must be equal."
+            for input_list1_element in input_list1:
+                if len(input_list1_element) != len(input_list1[0]):
+                    raise ValueError(error_str.format(mode_name, input_list1_name))
+            for input_list2_element in input_list2:
+                if len(input_list2_element) != len(input_list2[0]):
+                    raise ValueError(error_str.format(mode_name, input_list2_name))
+
+
+class OperationUtilsProcess():
     ### RPM 속도 제한
     def truncate_RPM_speed(self, speed: float, raise_error=False) -> int or float:
         """truncate speed between -30 to 30 RPM"""
@@ -177,7 +212,7 @@ class OperationUtils():
         if str(cube_ID).lower() == "all":
             cube_ID = 0xFF
         else:
-            self.integer_check(cube_ID, "all") # 정수 체크
+            OperationUtilsCheck().integer_check(cube_ID, "all") # 정수 체크
             cube_ID = int(cube_ID) # 정수로 변환 
             if not (1 <= cube_ID and cube_ID <= 8):
                 raise ValueError("Cube ID must be between 1 to 8.")
@@ -194,61 +229,11 @@ class OperationUtils():
             cube_ID_list[i] = self.process_cube_ID(cube_ID_list[i], connection_number)
             if cube_ID_list[i] == 0xFF and len(cube_ID_list) != 1:
                 raise ValueError("If cube ID is all, input must not be length-above-2 list.")
-        self.check_same_element(cube_ID_list) # 같은 원소가 있으면 error
+        OperationUtilsCheck().check_same_element(cube_ID_list) # 같은 원소가 있으면 error
         #if cube_ID_list[0] == 0xFF:
         #    cube_ID_list = [x for x in range(1, connection_number+1)] # all이면 확장
         return cube_ID_list
     
-    ### run_number 설정
-    def set_run_number(self, cube_ID_list, connection_number):
-        if cube_ID_list[0] == 0xFF:
-            run_number = connection_number
-        else:
-            run_number = len(cube_ID_list)
-        return run_number
-
-    ### pause 리스트 체크
-    def check_pause_list(self, pause_list):
-        if pause_list == [] or pause_list == ():
-            raise ValueError("pause_list must not be empty list (or tuple).")
-        for pause in pause_list:
-            if not isinstance(pause, bool):
-                raise ValueError("pause_list elements must be bool.")
-
-    ### speed 옵션 체크
-    def check_speed_option(self, speed_option):
-        if not isinstance(speed_option, str):
-            raise ValueError("speed_option must be str.")
-        elif speed_option.upper() != "RPM" and speed_option.upper() != "SPS":
-            raise ValueError("Unknown speed_option.")
-
-    ### step 옵션 체크
-    def check_step_option(self, step_option):
-        if not isinstance(step_option, str):
-            raise ValueError("step_option must be str.")
-        elif step_option.upper() != "CYCLE" and step_option.upper() != "STEP":
-            raise ValueError("Unknown step_option.")
-
-    ### sync 옵션 체크
-    def check_sync_option(self, sync):
-        if not isinstance(sync, bool):
-            raise ValueError("sync must be bool.")
-
-    ### wait 체크
-    def check_wait(self, wait, run_option):
-        if run_option == "continue":
-            if not isinstance(wait, int) and not isinstance(wait, float):
-                raise ValueError("wait must be int or float in continue mode.")
-            elif wait < 0:
-                raise ValueError("wait must be positive.")
-        else:
-            if not isinstance(wait, int) and not isinstance(wait, float) and not isinstance(wait, str):
-                raise ValueError("wait must be int, float, or str.")
-            elif (isinstance(wait, int) or isinstance(wait, float)) and wait < 0:
-                raise ValueError("wait must be positive.")
-            elif isinstance(wait, str) and wait.lower() != "step" and wait.lower() != "schedule":
-                raise ValueError("Unknown wait option.")
-
     ### time 옵션 체크 & 처리
     def check_time_option(self, time_option):
         if time_option == None:
@@ -259,10 +244,10 @@ class OperationUtils():
             raise ValueError("Unknown time_option.")
         return time_option
 
-    ### 디폴트 설정
-    def set_default(self, speed_list, step_list, speed_option, step_option, run_option):
+    ### 디폴트 설정 & 체크
+    def set_default(self, input_list, option_list, run_option):
         ### 스피드 처리 함수
-        def set_speed(speed_list):
+        def set_speed(speed_list, speed_option):
             if speed_list == [None]:
                 if speed_option.upper() == "RPM":
                     speed_list = [30]
@@ -270,7 +255,7 @@ class OperationUtils():
                     speed_list = [1000]
             return speed_list
         ### 스텝 처리 함수
-        def set_step(step_list):
+        def set_step(step_list, step_option):
             if step_list == [None]:
                 if step_option.upper() == "CYCLE":
                     step_list = [1]
@@ -278,22 +263,142 @@ class OperationUtils():
                     step_list = [2000]
             return step_list
         ### 리턴
+        ### 컨티뉴 모드
         if run_option.lower() == "continue":
-            speed_list = set_speed(speed_list)
+            speed_list = input_list[0]
+            speed_option = option_list[0]
+            speed_list = set_speed(speed_list, speed_option)
             return speed_list
+        ### 스텝 모드
         elif run_option.lower() == "step":
-            speed_list = set_speed(speed_list)
-            step_list = set_step(step_list)
+            speed_list = input_list[0]
+            speed_option = option_list[0]
+            step_list = input_list[1]
+            step_option = option_list[1]
+            speed_list = set_speed(speed_list, step_option)
+            step_list = set_step(step_list, step_option)
             return speed_list, step_list
+        ### 스케줄 모드
+        elif run_option.lower() == "schedule":
+            speed_list = input_list[0]
+            speed_option = option_list[0]
+            step_list = input_list[1]
+            step_option = option_list[1]
+            time_list = input_list[2]
+            time_option = option_list[2]
+            if time_option.lower() == "none":
+                if speed_list == [None] or step_list == [None]:
+                    raise ValueError("In schedule mode, speed_list and step_list must be entered.")
+            elif time_option.lower() == "speed":
+                if time_list == [None] or speed_list == [None]:
+                    raise ValueError("In schedule and time-speed mode, time_list and speed_list must be entered.")
+            elif time_option.lower() == "step":
+                if time_list == [None] or step_list == [None]:
+                    raise ValueError("In schedule and time-step mode, time_list and step_list must be entered.")
+            return None
+        ### 포인트 모드
+        elif run_option.lower() == "point":
+            start_point_list = input_list[0]
+            stop_point_list = input_list[1]
+            start_and_stop_list = input_list[2]
+            if start_point_list == [[None]] and stop_point_list == [[None]]: # 스타트, 스탑 포인트 체크
+                if start_and_stop_list != [[None]]:
+                    start_point_list = []
+                    stop_point_list = []
+                    for start_and_stop_list_element in start_and_stop_list:
+                        if not isinstance(start_and_stop_list_element, list) and not isinstance(start_and_stop_list_element, tuple):
+                            raise ValueError("start_and_stop_list elements must be list or tuple.")
+                        start_point_list_out, stop_point_list_out = OperationUtilsConvert().convert_start_and_stop_list(start_and_stop_list_element)
+                        start_point_list.append(start_point_list_out)
+                        stop_point_list.append(stop_point_list_out)
+                else:
+                    start_point_list, stop_point_list = [[0]], [["end"]] # 디폴트 0(처음), end(끝)
+            elif start_and_stop_list != [[None]]:
+                print("Warning. start_point_list and stop_point_list are ignored. start_and_stop_list is accepted.")
+                start_point_list = []
+                stop_point_list = []
+                for start_and_stop_list_element in start_and_stop_list:
+                    if not isinstance(start_and_stop_list_element, list) and not isinstance(start_and_stop_list_element, tuple):
+                        raise ValueError("start_and_stop_list elements must be list or tuple.")
+                    start_point_list_out, stop_point_list_out = OperationUtilsConvert().convert_start_and_stop_list(start_and_stop_list_element)
+                    start_point_list.append(start_point_list_out)
+                    stop_point_list.append(stop_point_list_out)
+            elif start_point_list == [[None]]:
+                start_point_list = [[0]]
+            elif stop_point_list == [[None]]:
+                stop_point_list = [["end"]]
+            return start_point_list, stop_point_list
 
-    ### 길이 체크
-    def len_check(self, input_list, cube_ID_list, connection_number, mode_name, list_name):
-        if cube_ID_list[0] != 0xFF:
-            if len(input_list) != 1 and len(input_list) != len(cube_ID_list):
-                raise ValueError("In {} mode, {} must have the same length as cube_ID_list, or have 1 length.".format(mode_name, list_name))
-        elif len(input_list) != connection_number and len(input_list) != 1:
-            raise ValueError("In {} mode with all cube IDs, {} must have the same length as connection number, or have 1 length.".format(mode_name, list_name))
+class OperationUtilsSet():
+    ### run_number 설정
+    def set_run_number(self, cube_ID_list, connection_number):
+        if cube_ID_list[0] == 0xFF:
+            run_number = connection_number
+        else:
+            run_number = len(cube_ID_list)
+        return run_number
 
+
+class OperationUtilsConvert():
+    ### 리스트 포인터(id)를 다르게 복사
+    def list_product_copy(self, input_list, number) -> list:
+        input_list = input_list[0] # ex) [[2, 3, 4, 5]]
+        out_list = [] # ex) number=3, [[2, 3, 4, 5], [2, 3, 4, 5], [2, 3, 4, 5]]
+        i = 0
+        while i < number:
+            new_list = [0]*len(input_list)
+            for j in range(len(input_list)):
+                new_list[j] = input_list[j]
+            out_list.append(new_list)
+            i += 1
+        return out_list
+
+    # 리스트로 변환
+    def to_list(self, input_data) -> list:
+        if isinstance(input_data, list) or isinstance(input_data, tuple):
+            return list(input_data)
+        elif isinstance(input_data, int) or isinstance(input_data, float) \
+            or isinstance(input_data, str) or isinstance(input_data, bool) or input_data == None:
+            return [input_data]
+        else:
+            raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or bool, or None.")
+
+    ### RPM을 SPS로 변환
+    def RPM_to_SPS(self, RPM: float) -> int or None:
+        if 3 <= RPM and RPM <= 30:
+            SPS = 50*(-60/RPM+22)
+        elif -30 <= RPM and RPM <= -3:
+            SPS = 50*(-60/RPM-22)
+        elif RPM == 0:
+            SPS = 0
+        else:
+            print("Warning: RPM must be between +-3 to +- 30, or 0.")
+            return None
+        return round(SPS) # -1000 to 1000
+
+    ### SPS를 RPM으로 변환
+    def SPS_to_RPM(self, SPS: int) -> float or None:
+        if 100 <= SPS and SPS <= 1000:
+            RPM = 60/(-SPS/50+22)
+        elif -1000 <= SPS and SPS <= 100:
+            RPM = -60/(SPS/50+22)
+        elif SPS == 0:
+            RPM = 0
+        else:
+            print("Warning: SPS must be between +-100 to +- 1000, or 0.")
+            RPM = None  
+        return RPM # -300 to 300
+
+    ### cycle을 step으로 변환
+    def cycle_to_step(self, cycle) -> int:
+        step = cycle*2000
+        return round(step)
+
+    ### step을 cycle로 변환
+    def step_to_cycle(self, step) -> float:
+        cycle = step/2000
+        return cycle
+    
     ### 속도 제한 (RPM, SPS)
     def limit_speed(self, speed_list, speed_option, run_number, sync, run_option):
         ### truncate 에러 체크
@@ -319,8 +424,8 @@ class OperationUtils():
                         sleep_list[i][j] = True
                     if not is_schedule and (isinstance(speed_list[i][j], list) or isinstance(speed_list[i][j], tuple)):
                         raise ValueError("In {} mode, elements of lists cannot be list or tuple.".format(run_option.lower()))
-                    OperationUtils().float_check(speed_list[i][j], "stop or sleep")
-                    speed_list[i][j] = self.truncate_RPM_speed(speed_list[i][j], raise_error) # speed 자르기
+                    OperationUtilsCheck().float_check(speed_list[i][j], "stop or sleep")
+                    speed_list[i][j] = OperationUtilsProcess().truncate_RPM_speed(speed_list[i][j], raise_error) # speed 자르기
                     speed_list[i][j] = self.RPM_to_SPS(speed_list[i][j]) # 단위를 RPM에서 SPS로 변경
         ### SPS 모드
         elif speed_option.upper() == "SPS":
@@ -331,8 +436,8 @@ class OperationUtils():
                         speed_list[i][j] = 0
                         sleep_list[i][j] = True
                     speed_list[i][j] = round(speed_list[i][j])
-                    OperationUtils().float_check(speed_list[i][j])
-                    speed_list[i][j] = self.truncate_SPS_speed(speed_list[i][j], raise_error) # speed 자르기
+                    OperationUtilsCheck().float_check(speed_list[i][j])
+                    speed_list[i][j] = OperationUtilsProcess().truncate_SPS_speed(speed_list[i][j], raise_error) # speed 자르기
         ### schedule 모드이면 겉 list 제거
         if not is_schedule:
             speed_list = speed_list[0]
@@ -355,10 +460,10 @@ class OperationUtils():
             sleep_list = [sleep_list]
         ### 1줄일 때 복제
         if len(speed_list) == 1:
-            speed_list = OperationUtils().list_product_copy(speed_list, run_number)
-            sleep_list = OperationUtils().list_product_copy(sleep_list, run_number)
+            speed_list = self.list_product_copy(speed_list, run_number)
+            sleep_list = self.list_product_copy(sleep_list, run_number)
         elif len(step_list) == 1:
-            step_list = OperationUtils().list_product_copy(step_list, run_number)
+            step_list = self.list_product_copy(step_list, run_number)
         ### CYCLE 모드
         if step_option.upper() == "CYCLE":
             ### 사이클 체크 & 변환 
@@ -366,22 +471,22 @@ class OperationUtils():
                 for j in range(len(step_list[i])):
                     if sleep_list[i][j]:
                         step_list[i][j] /= 2 # sleep이면 2로 나누고 step으로 변환하면 초 단위가 됨.
-                    OperationUtils().float_check(step_list[i][j])
+                    OperationUtilsCheck().float_check(step_list[i][j])
                     if step_list[i][j] < 0: 
                         step_list[i][j] = -step_list[i][j] # step이 -이면 speed를 -로 바꾸기
                         speed_list[i][j] = -speed_list[i][j]
-                    step_list[i][j] = self.truncate_cycle_step(step_list[i][j], raise_error) # cycle 자르기
+                    step_list[i][j] = OperationUtilsProcess().truncate_cycle_step(step_list[i][j], raise_error) # cycle 자르기
                     step_list[i][j] = self.cycle_to_step(step_list[i][j]) # 단위를 cycle에서 step으로 변경
         ### STEP 모드
         elif step_option.upper() == "STEP":
             ### 스텝 체크 & 변환 
             for i in range(len(step_list)):
                 for j in range(len(step_list[i])):
-                    OperationUtils().integer_check(step_list[i][j]) # step은 integer이어야 함.
+                    OperationUtilsCheck().integer_check(step_list[i][j]) # step은 integer이어야 함.
                     if step_list[i][j] < 0: 
                         step_list[i][j] = -step_list[i][j] # step이 -이면 speed를 -로 바꾸기
                         speed_list[i][j] = -speed_list[i][j]
-                    step_list[i][j] = self.truncate_step_step(step_list[i][j], raise_error) # cycle 자르기
+                    step_list[i][j] = OperationUtilsProcess().truncate_step_step(step_list[i][j], raise_error) # cycle 자르기
         ### schedule 모드가 아니면 겉 list 제거
         if not is_schedule:
             step_list = step_list[0]
@@ -422,7 +527,7 @@ class OperationUtils():
             for i in range(len(time_list)):
                 ### 내부 원소 길이는 이미 정리 함. (len_check)
                 for j in range(len(time_list[i])):
-                    self.float_check(time_list[i][j])
+                    OperationUtilsCheck().float_check(time_list[i][j])
                     if time_list[i][j] < 0:
                         raise ValueError("Time cannot smaller than 0.")
                     ### step_list 작성, 단위는 STEP
@@ -449,8 +554,8 @@ class OperationUtils():
                             else:
                                 step_list[i][j] = 0
                         else:
-                            self.float_check(step_list[i][j])
-                            step_list[i][j] = self.truncate_cycle_step(step_list[i][j], raise_error) # cycle 자르기
+                            OperationUtilsCheck().float_check(step_list[i][j])
+                            step_list[i][j] = OperationUtilsProcess().truncate_cycle_step(step_list[i][j], raise_error) # cycle 자르기
                             step_list[i][j] = self.cycle_to_step(step_list[i][j]) # 단위를 cycle에서 step으로 변경
                 step_option = "STEP"
             ### time 리스트: 0보다 크고, +- 30 이상 +- 3 이하 스피드가 될 수 없음.
@@ -458,7 +563,7 @@ class OperationUtils():
                 ### 내부 원소 길이는 이미 정리 함. (len_check)
                 for j in range(len(time_list[i])):
                     ### time 리스트 체크
-                    self.float_check(time_list[i][j])
+                    OperationUtilsCheck().float_check(time_list[i][j])
                     if time_list[i][j] < 0:
                         raise ValueError("Time cannot smaller than 0.")
                     ### speed_list 작성, 단위는 SPS
@@ -612,6 +717,77 @@ class OperationUtils():
                     max_time = new_time
         return max_time
 
+    def convert_wait_point(self, cube_ID_list, robot_status, discovery_group, start_point_list, stop_point_list, repeat_list, pause_list):
+        def cal_time(speed_element, step_element):
+            if speed_element == 0:
+                new_time_out = step_element/1000
+            else:
+                speed_element = self.SPS_to_RPM(speed_element)/60 # RPS
+                step_element = self.step_to_cycle(step_element)
+                new_time_out = abs(step_element/speed_element)
+            return new_time_out
+        # speed: SPS, step: STEP
+        speed_list = []
+        step_list = []
+        for cube_ID_element in cube_ID_list:
+            speed_list.append(robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element])
+            speed_list.append(robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element])
+        ### max time 계산
+        max_time = 0
+        for i in range(len(start_point_list)): # i: cube ID 인덱스
+            if pause_list[i]: # pause이면 wait 무시
+                new_time = 0
+            else:
+                new_time = 0
+                for j in range(len(start_point_list[i])): # j: 포인트 인덱스
+                    new_time_j = 0
+                    for k in range(start_point_list[i][j], stop_point_list[i][j]+1): # k: 스피드, 스텝 인덱스, +1은 마지막 인덱스 포함 때문.
+                        new_time_j += cal_time(speed_list[i][k], step_list[i][k])
+                    new_time_j *= repeat_list[i][j] # 반복되는 만큼 곱함
+                    new_time += new_time_j
+            if new_time > max_time:
+                max_time = new_time
+        return max_time
+
+    ### start_and_stop_list 변환 함수
+    def convert_start_and_stop_list(self, start_and_stop_list):
+        # Ex)
+        # [[1, 2], [3, 4]]
+        # [1, 2]
+        # [[1, 2], [3, 4], [5, 6]]
+        # [2, [2, 3], [3], [4, 5]]
+        start = []
+        stop = []
+        if isinstance(start_and_stop_list, list) or isinstance(start_and_stop_list, tuple):
+            for i in range(len(start_and_stop_list)):
+                if isinstance(start_and_stop_list[i], list) or isinstance(start_and_stop_list[i], tuple):
+                    if len(start_and_stop_list[i]) == 1:
+                        start_and_stop_list[i] *= 2
+                    elif len(start_and_stop_list[i]) != 2:
+                        raise ValueError("If start_and_stop_list elements are list of lists (or tuple), elemental lists must be 1 or 2-length list (or tuple).")
+                    if not isinstance(start_and_stop_list[i][0], int) or not isinstance(start_and_stop_list[i][1], int):
+                        raise ValueError("If start_and_stop_list elements are list of lists (or tuple), elemental lists must have integer elements.")
+                    else:
+                        ### list 등록
+                        start.append(start_and_stop_list[i][0])
+                        stop.append(start_and_stop_list[i][1])
+                elif isinstance(start_and_stop_list[i], int):
+                    ### list 등록
+                    start.append(start_and_stop_list[i])
+                    stop.append(start_and_stop_list[i])
+                else:
+                    raise ValueError("start_and_stop_list must have list or int elements.")
+            return start, stop
+        elif isinstance(start_and_stop_list, int):
+            ### list 등록
+            start = start_and_stop_list
+            stop = start_and_stop_list
+            return start, stop
+        else:
+            raise ValueError("start_and_stop_list elements must be list (or tuple), or int.")
+
+
+class OperationUtils(OperationUtilsCheck, OperationUtilsProcess, OperationUtilsSet, OperationUtilsConvert):
     ### agg 설정이 올 때까지 잡아두기
     def wait_until_agg_set(self, get_robot_status, set_robot_status, discovery_group, connection_number):
         if connection_number > 1:
