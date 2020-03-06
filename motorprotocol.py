@@ -220,9 +220,9 @@ class MotorProtocol():
         elif step_type == 4: 
             ### Servo mode
             for i in range(len(speed_seq_list)):
-                ### set speed schedule
+                ### set speed schedule of stepper motor
                 hexlist.extend(self._SPS_to_hexlist(round(speed_seq_list[i]), 2))
-                ### set step schedule
+                ### set step schedule of stepper motor
                 hexlist.extend(ByteUtils().int_to_hexlist(round(step_seq_list[i]), 2))
                 ### set servo angle (0 to 180 deg)
                 hexlist.append(servo_angle_list[i])
