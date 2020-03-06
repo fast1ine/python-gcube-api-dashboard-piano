@@ -40,7 +40,7 @@ class LEDMatrixProtocol():
         ### set coordinate (1 to 8)
         hexlist[10] = x_coordinate
         hexlist[11] = y_coordinate
-        ### set on/off (boolean)
+        ### set on/off (boolean: 0 -> on, 1 -> off)
         hexlist[12] = int(onoff)
         return bytes(hexlist)
 
@@ -49,7 +49,7 @@ class LEDMatrixProtocol():
         hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xE2, 0xA2, 0x00, 0x12, 0x70, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]
         ### generic process (discovery group & cube ID & robot number protocol)
         hexlist = self._generic_ledmatrix_hexlist(hexlist, cube_ID, discovery_group)
-        ### set picture (boolean list: len 8 -> xY0 to xY7)
+        ### set picture (boolean list: len 8 -> xY0 to xY7, 0 -> on, 1 -> off)
         hexlist[10:] = list(map(int, picture))
         return bytes(hexlist)
 
@@ -59,7 +59,7 @@ class LEDMatrixProtocol():
         ### generic process (discovery group & cube ID & robot number protocol)
         hexlist = self._generic_ledmatrix_hexlist(hexlist, cube_ID, discovery_group)
         ### set data size
-        hexlist[7:9] = ByteUtils().int_to_hexlist(10+len(strings), 2) 
+        hexlist[7:9] = ByteUtils().int_to_hexlist(11+len(strings), 2) 
         ### set scroll period (1 to 200 -> 10ms to 2000ms)
         hexlist[10] = scroll_period
         ### set string (str: ascii available characters only)
