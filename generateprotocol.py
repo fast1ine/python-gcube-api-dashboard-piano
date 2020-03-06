@@ -1,8 +1,9 @@
 from motorprotocol import MotorProtocol
 from musicprotocol import MusicProtocol
+from ledmatrixprotocol import LEDMatrixProtocol
 from byteutils import ByteUtils
 
-class GenerateProtocol(MotorProtocol, MusicProtocol):
+class GenerateProtocol(MotorProtocol, MusicProtocol, LEDMatrixProtocol):
     #FF FF FF FF 00 00 A8 00 0A 01
     PingPong_disconnect_hexlist = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xA8, 0x00, 0x0A, 0x01]
     PingPong_disconnect_bytes = bytes(PingPong_disconnect_hexlist)
@@ -11,6 +12,7 @@ class GenerateProtocol(MotorProtocol, MusicProtocol):
         self.connection_number = number
         MotorProtocol.__init__(self, number)
         MusicProtocol.__init__(self, number)
+        LEDMatrixProtocol.__init__(self, number)
 
     def _process_cube_ID(self, cube_ID):
         if str(cube_ID).lower() == "all":
