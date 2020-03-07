@@ -5,7 +5,7 @@ class MotorProtocol():
         self.connection_number = number
 
     def _set_discovery_group(self, hexlist, discovery_group):
-        ### set discovery group ID (1 to 8)
+        ### set discovery group ID (1 to 8?)
         if discovery_group == None:
             hexlist[2] = 0xFF
         else:
@@ -36,7 +36,7 @@ class MotorProtocol():
         """generic protocol (discovery_group, cube ID, connection number, pause)"""
         ### set discovery group
         hexlist = self._set_discovery_group(hexlist, discovery_group)
-        ### set cube ID (1 to 8 -> 0 to 7)
+        ### set cube ID 
         hexlist = self._set_cube_ID(hexlist, cube_ID)
         ### set connection number
         hexlist = self._set_connection_number_motor(hexlist)
@@ -256,7 +256,7 @@ class MotorProtocol():
         """step motor command to master robot"""
         ### FF FF 01 AA 10 00 CD 00 12 02 00 00 00 ~
         hexlist = [0xFF, 0xFF, 0x01, 0xAA, 0x10, 0x00, 0xCD, 0x00, 0x12, 0x02, 0x00, 0x00, 0x00]
-        ### set discovery group ID (0 to 8)
+        ### set discovery group ID
         hexlist = self._set_discovery_group(hexlist, discovery_group)
         ### set connection number
         hexlist = self._set_connection_number_motor(hexlist)
@@ -316,7 +316,7 @@ class MotorProtocol():
             hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xC6, 0x00, 0x0A, 0x02]
             ### set discovery group
             hexlist = self._set_discovery_group(hexlist, discovery_group)
-            ### set cube ID (1 to 8 -> 0 to 7)
+            ### set cube ID
             hexlist = self._set_cube_ID(hexlist, cube_ID)
             ### set connection number
             hexlist = self._set_connection_number_motor(hexlist)
@@ -343,11 +343,13 @@ class MotorProtocol():
         return bytes(hexlist)
 
     def SetSingleServo(self, cube_ID, servo_value, timeout, discovery_group=None) -> bytes:
-        hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x01]
+        hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x00, 0xE1, 0x00, 0x0D, 0x02, 0x00, 0x00, 0x01]
         ### set discovery group
         hexlist = self._set_discovery_group(hexlist, discovery_group)
-        ### set cube ID (1 to 8 -> 0 to 7)
+        ### set cube ID
         hexlist = self._set_cube_ID(hexlist, cube_ID)
+        ### set connection number
+        hexlist = self._set_connection_number_motor(hexlist)
         ### Method?
         #hexlist[10]
         ### set servo value (0 to 180 deg)

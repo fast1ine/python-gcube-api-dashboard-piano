@@ -26,7 +26,7 @@ class LEDMatrixProtocol():
         """generic protocol (discovery_group, cube ID, connection number)"""
         ### set discovery group
         hexlist = self._set_discovery_group(hexlist, discovery_group)
-        ### set cube ID (1 to 8 -> 0 to 7)
+        ### set cube ID
         hexlist = self._set_cube_ID(hexlist, cube_ID)
         ### set connection number
         hexlist = self._set_connection_number_motor(hexlist)
@@ -37,7 +37,7 @@ class LEDMatrixProtocol():
         hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xE1, 0xA2, 0x00, 0x0D, 0x70, 0x01, 0x01, 0x01]
         ### generic process (discovery group & cube ID & robot number protocol)
         hexlist = self._generic_ledmatrix_hexlist(hexlist, cube_ID, discovery_group)
-        ### set coordinate (1 to 8)
+        ### set coordinate (0 to 7)
         hexlist[10] = x_coordinate
         hexlist[11] = y_coordinate
         ### set on/off (boolean: 0 -> on, 1 -> off)
