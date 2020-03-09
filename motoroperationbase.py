@@ -355,14 +355,12 @@ class ScheduledPointsMotorOperation(MotorOperationBase):
         for cube_ID_element in cube_ID_list:
             if self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element] == []: # 스케줄이 비었음
                 raise ValueError("Set schedule before play.")
-            #elif self._robot_status[discovery_group].controller_status.stepper_pause[x] == False: # 이전에 play 상태로 끝남
-            #    pass
         ### pause 리스트 체크
         OperationUtils().check_pause_list(pause_list)
         ### sync 옵션 체크
         OperationUtils().check_sync_option(sync)
         ### wait 체크
-        OperationUtils().check_wait(wait, run_option="schedule")
+        OperationUtils().check_wait(wait, run_option="point")
         ### 변환 & 디폴트 값 넣기
         start_point_list, stop_point_list = OperationUtils().set_default(input_list=[start_point_list, stop_point_list, start_and_stop_list], option_list=None, run_option="point")
         ### list of list 체크

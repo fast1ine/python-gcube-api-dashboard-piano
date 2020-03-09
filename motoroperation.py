@@ -1,6 +1,6 @@
 from generateprotocol import GenerateProtocol
 from operationutils import OperationUtils
-from basemotoroperation import ContinuousMotorOperation, SingleStepsMotorOperation, ScheduledStepsMotorOperation, ScheduledPointsMotorOperation
+from motoroperationbase import ContinuousMotorOperation, SingleStepsMotorOperation, ScheduledStepsMotorOperation, ScheduledPointsMotorOperation
 import time, copy
 
 class MotorOperation(ContinuousMotorOperation, SingleStepsMotorOperation, ScheduledStepsMotorOperation, ScheduledPointsMotorOperation):
@@ -179,7 +179,7 @@ class MotorOperation(ContinuousMotorOperation, SingleStepsMotorOperation, Schedu
         ### 작동 처리 함수
         def proc_op(x):
             if self._robot_status[discovery_group].controller_status.stepper_pause[x] == False: 
-                raise ValueError("Set paused motor operation before play.")
+                print("Warning. play_paused_motor operation is ignored. Set paused motor operation before play.")
             else:
                 ### status 저장
                 self._robot_status[discovery_group].controller_status.stepper_pause[x] = False
@@ -207,7 +207,7 @@ class MotorOperation(ContinuousMotorOperation, SingleStepsMotorOperation, Schedu
         time_option=None,
         wait=0) -> None:
         """
-        Run stepper motors as syncronized mode.
+        Run stepper motors as aggregate mode.
         speed_list: Integer, range from +- 100 to +- 1000, or 0. The unit is SPS(step per second?), or RPM(rotation per minute). 
         run_option: \"continue\", \"step\", \"schedule\"
         speed_option: \"RPM\", \"SPS\"

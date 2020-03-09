@@ -10,7 +10,6 @@ from motoroperation import MotorOperation
 from robotstatus import RobotStatus
 import sys
 import time
-#import serial
 
 class PingPongThread(ReaderThread, MotorOperation):
     _is_instance = False
