@@ -240,11 +240,11 @@ class MotorOperation(ContinuousMotorOperation, SingleStepsMotorOperation, Schedu
 
 
     # 스케줄 설정
-    def set_motor_schedule(self, cube_ID_list, speed_list, step_list, pause_list=True, time_list=None, \
-        discovery_group=None, speed_option="RPM", step_option="CYCLE", sync=False, time_option=None, \
+    def set_motor_schedule(self, cube_ID_list, speed_list, step_list, pause_list=True, time_list=None, 
+        discovery_group=None, speed_option="RPM", step_option="CYCLE", sync=False, time_option=None, 
         wait=0) -> None:
-        self.run_motor(cube_ID_list, speed_list, step_list, pause_list, time_list, discovery_group, \
-            "schedule", speed_option, step_option, sync, time_option, wait)
+        self.run_motor_schedule(cube_ID_list, speed_list, step_list, pause_list, time_list, discovery_group, speed_option, step_option, sync, time_option, wait)
+        return None
     
 
     
