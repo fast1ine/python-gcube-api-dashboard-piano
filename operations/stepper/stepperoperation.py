@@ -1,6 +1,6 @@
 from protocols.generateprotocol import GenerateProtocol
-from operations.stepperoperationutils import StepperOperationUtils
-from operations.stepperoperationbase import ContinuousStepperOperation, SingleStepsStepperOperation, ScheduledStepsStepperOperation, ScheduledPointsStepperOperation
+from operations.stepper.stepperoperationutils import StepperOperationUtils
+from operations.stepper.stepperoperationbase import ContinuousStepperOperation, SingleStepsStepperOperation, ScheduledStepsStepperOperation, ScheduledPointsStepperOperation
 import time, copy
 
 class StepperOperation(ContinuousStepperOperation, SingleStepsStepperOperation, ScheduledStepsStepperOperation, ScheduledPointsStepperOperation):

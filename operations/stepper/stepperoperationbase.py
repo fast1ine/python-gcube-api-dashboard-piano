@@ -1,5 +1,5 @@
 from protocols.generateprotocol import GenerateProtocol
-from operations.stepperoperationutils import StepperOperationUtils
+from operations.stepper.stepperoperationutils import StepperOperationUtils
 import time
 
 class StepperOperationBase():
@@ -209,6 +209,7 @@ class ScheduledStepsStepperOperation(StepperOperationBase):
         cube_ID_list = StepperOperationUtils().to_list(cube_ID_list)
         speed_list = StepperOperationUtils().to_list(speed_list)
         step_list = StepperOperationUtils().to_list(step_list)
+        time_list = StepperOperationUtils().to_list(time_list)
         pause_list = StepperOperationUtils().to_list(pause_list)
         ### 큐브 ID 리스트 처리
         cube_ID_list = StepperOperationUtils().process_cube_ID_list(cube_ID_list, connection_number)
@@ -303,14 +304,15 @@ class ScheduledStepsStepperOperation(StepperOperationBase):
             sending_bytes = self._GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
         ### 스케줄 설정 작동
         self._write_copy(sending_bytes) 
-        ### agg 설정이 올 때까지 잡아두기
+        ### 1개 이상이면 agg 설정이 올 때까지 잡아두기
         StepperOperationUtils().wait_until_agg_set(self._get_robot_status, self._set_robot_status, discovery_group, connection_number)
         ### 포인트로 작동
         time.sleep(0.2)
         sending_bytes = b""
         for i, cube_ID_element in enumerate(cube_ID_list):
             sending_bytes += self._GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, [0], [len(speed_list[i])], [1], discovery_group, pause_list[i])
-        sending_bytes = self._GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
+        if connection_number > 1:
+            sending_bytes = self._GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
         self._write_copy(sending_bytes)
         ### sleep
         if wait != 0:

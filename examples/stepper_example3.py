@@ -1,3 +1,6 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))) # 상위 폴더 경로 가져오기
+
 from pingpongthread import PingPongThread
 import keyboard # keyboard==0.13.4
 

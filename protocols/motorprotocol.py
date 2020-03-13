@@ -226,7 +226,7 @@ class MotorProtocol():
                 hexlist.extend(ByteUtils().int_to_hexlist(round(step_seq_list[i]), 2))
                 ### set servo angle (0 to 180 deg)
                 hexlist.append(servo_angle_list[i])
-                ### set servo timeout (1 to 255 sec, 0 for 21.845 min)
+                ### set servo timeout (0 to 255 sec, 256 for 21.845 min)
                 hexlist.append(servo_angle_timeout_list[i])
         return bytes(hexlist)
 
@@ -354,6 +354,6 @@ class MotorProtocol():
         #hexlist[10]
         ### set servo value (0 to 180 deg)
         hexlist[11] = servo_value
-        ### set servo timeout (1 to 255 sec, 0 or 0xFF: 21.845 min ?)
+        ### set servo timeout (0 to 255 sec, 256 for 21.845 min)
         hexlist[12] = timeout
         return bytes(hexlist)

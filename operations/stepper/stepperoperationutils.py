@@ -209,7 +209,7 @@ class StepperOperationUtilsProcess():
 
     ### 큐브 ID 처리
     def process_cube_ID(self, cube_ID, connection_number):
-        if str(cube_ID).lower() == "all":
+        if isinstance(cube_ID, str) and cube_ID.lower() == "all":
             cube_ID = 0xFF
         else:
             StepperOperationUtilsCheck().integer_check(cube_ID, "all") # 정수 체크
