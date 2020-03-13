@@ -1,17 +1,17 @@
 # Environment: Windows x64, Python x64 3.6.6
 # pyserial==3.4
 
-from serialprotocol import ReaderThread
-from connectionutils import ConnectionUtils
-from utils import Utils
-from rawprotocol import rawProtocol
-from generateprotocol import GenerateProtocol
-from motoroperation import MotorOperation
+from connection.serialprotocol import ReaderThread
+from connection.connectionutils import ConnectionUtils
+from connection.utils import Utils
+from connection.rawprotocol import rawProtocol
+from protocols.generateprotocol import GenerateProtocol
+from operations.operationderived import OperationDerived
 from robotstatus import RobotStatus
 import sys
 import time
 
-class PingPongThread(ReaderThread, MotorOperation):
+class PingPongThread(ReaderThread, OperationDerived):
     _is_instance = False
     _is_start = False
     def __init__(self, number=1):
@@ -24,7 +24,7 @@ class PingPongThread(ReaderThread, MotorOperation):
         if not PingPongThread._is_instance:
             PingPongThread._is_instance = True # 인스턴스 생성 확인
             self._GenerateProtocolInstance = GenerateProtocol(number) # GenrateProtocol instance 생성
-            MotorOperation.__init__(self, number, self._robot_status, self._start_check, self._write) # MotorOperation 초기화
+            OperationDerived.__init__(self, number, self._robot_status, self._start_check, self._write) # MotorOperation 초기화
             self.PORT = ConnectionUtils().find_bluetooth_dongle(self._GenerateProtocolInstance.DongleInAction_bytes()) # 동글 포트 찾기
             self._play_once_flag = True
         else:
