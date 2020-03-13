@@ -9,7 +9,7 @@ class ControllerStatus():
         self.discovery_group = discovery_group
         self.connection_number = connection_number
         ### stepper status
-        self.stepper_mode = [None]*connection_number
+        self.stepper_mode = [None]*connection_number # "continue", "step", "point"
         self.stepper_pause = [None]*connection_number
         self.stepper_speed = [None]*connection_number
         self.stepper_step = [None]*connection_number
@@ -19,6 +19,10 @@ class ControllerStatus():
         self.stepper_schedule_point_start = [[]]*connection_number
         self.stepper_schedule_point_end = [[]]*connection_number
         self.stepper_schedule_point_repeat = [[]]*connection_number
+        ### servo status
+        self.servo_mode = [None]*connection_number # "single", "point"
+        self.servo_angle = [None]*connection_number
+        self.servo_angle_schedule = [[]]*connection_number
 class ProcessedStatus():
     def __init__(self, connection_number):
         ### connection status
