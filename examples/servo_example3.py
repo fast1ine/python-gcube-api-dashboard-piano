@@ -13,17 +13,13 @@ PingPongThreadInstance.wait_until_full_connect() # 전부 연결될 때까지 �
 
 cube_ID = 1 # 큐브 번호
 servo_schedule = [[180, 0, 90, 180]] # 속도 스케줄
-servo_duration = 1 # 회전 스케줄
+speed_list = [[30, -30, 15, -15]]
+time_list = [[1, 1, 1, 1]]
 
 while not keyboard.is_pressed("q"): # q가 눌리기 전까지 쓰레드 유지
     while PingPongThreadInstance.play_once_full_connect(): # 연결 되어있는 동안, 한 번만 실행
-        ### single
-        PingPongThreadInstance.run_single_servo(cube_ID, 0) # 모터 돌림 (스케줄 모드)
-        time.sleep(1)
-        PingPongThreadInstance.run_single_servo(cube_ID, 180) # 모터 돌림 (스케줄 모드)
-        time.sleep(3)
         ### schedule
-        PingPongThreadInstance.run_servo_schedule(cube_ID, servo_schedule, servo_duration)
+        PingPongThreadInstance.run_servo_schedule(cube_ID, servo_schedule, speed_list=speed_list, time_list=time_list, time_option="speed", pause_list=False)
         print(PingPongThreadInstance.get_robot_status()) # 상태 확인
 
 PingPongThreadInstance.run_motor("all", "stop") # 모터 끔

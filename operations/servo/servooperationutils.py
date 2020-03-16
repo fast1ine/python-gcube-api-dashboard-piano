@@ -123,12 +123,27 @@ class ServoOperationUtilsCheck():
                 if len(input_list2_element) != len(input_list2[0]):
                     raise ValueError(error_str.format(mode_name, input_list2_name))
 
-    # servo angle 체크
+    ### servo angle 체크
     def check_servo_angle(self, angle):
         if not isinstance(angle, int):
-            raise ValueError("Servo angle must be int.")
+            raise ValueError("Servo angle must be int, and in between 0 to 180 (deg).")
         elif angle < 0 or 180 < angle:
-            raise ValueError("Servo angle must be in between 0 to 180.")
+            raise ValueError("Servo angle must be int, and in between 0 to 180 (deg).")
+
+    ### servo angle list 원소 체크
+    def check_servo_angle_list(self, servo_angle_list):
+        for angle_elem_list in servo_angle_list:
+            for angle in angle_elem_list:
+                self.check_servo_angle(angle)
+
+    ### servo duration 원소 체크
+    def check_servo_duration(self, servo_duration):
+        for duration_elem_list in servo_duration:
+            for duration in duration_elem_list:
+                if not isinstance(duration, int) and not isinstance(duration, float):
+                    raise ValueError("Servo duration must be int or float, and in between 0 to 65.535 (sec).")
+                elif duration < 0 or 65.535 < duration:
+                    raise ValueError("Servo duration must be int or float, and in between 0 to 65.535 (sec).")
 
 
 class ServoOperationUtilsProcess():
@@ -264,22 +279,28 @@ class ServoOperationUtilsProcess():
             time_option = option_list[1]
             ### 서보 각도 설정
             if servo_angle_list == [None]:
-                servo_angle_list = [[0]] # 디폴트(default)는 0으로 맞춤
-            elif not isinstance(servo_angle_list[0], list) and not isinstance(servo_angle_list[0], tuple):
-                pass # list of list 화
+                #servo_angle_list = [[0]] # 디폴트(default)는 0도로 맞춤.
+                raise ValueError("In schedule mode, servo_angle_list must be entered.")
             ### 디폴트 체크
             if not duration_option:
-                servo_duration = [[1]]
+                servo_duration = [[1]] # 디폴트(default)는 1초로 맞춤.
                 if time_option.lower() == "none":
+                    #if speed_list != [None] or step_list != [None]: # default off
                     if (speed_list != [None] and step_list == [None]) or (speed_list == [None] and step_list != [None]):
-                        raise ValueError("In schedule mode, both speed_list and step_list must be entered.")
+                        raise ValueError("In schedule, no-duration, and time-none mode, both speed_list and step_list must be entered.")
                 elif time_option.lower() == "speed":
+                    #if time_list != [None] or speed_list != [None]: # default off
                     if (time_list != [None] and speed_list == [None]) or (time_list == [None] and speed_list != [None]):
-                        raise ValueError("In schedule and time-speed mode, both time_list and speed_list must be entered.")
+                        raise ValueError("In schedule, no-duration, and time-speed mode, both time_list and speed_list must be entered.")
                 elif time_option.lower() == "step":
+                    #if time_list != [None] or step_list != [None]: # default off
                     if (time_list != [None] and step_list == [None]) or (time_list == [None] and step_list != [None]):
-                        raise ValueError("In schedule and time-step mode, both time_list and step_list must be entered.")
+                        raise ValueError("In schedule, no-duration, and time-step mode, both time_list and step_list must be entered.")
             else:
+                ### duration이 list of list가 아니면 list를 하나 더 씌움.
+                if len(servo_duration) == 1:
+                    if not isinstance(servo_duration[0], list) and not isinstance(servo_duration[0], tuple):
+                        servo_duration = [servo_duration]
                 if speed_list != [None] or step_list != [None] or time_list != [None]:
                     print("Warning. If servo_duration is entered, speed_list, step_list, and time_list are ignored.")
             return servo_angle_list, servo_duration
@@ -315,6 +336,7 @@ class ServoOperationUtilsProcess():
             elif stop_point_list == [[None]]:
                 stop_point_list = [["end"]]
             return start_point_list, stop_point_list
+
 
 class ServoOperationUtilsSet():
     ### run_number 설정
@@ -582,7 +604,7 @@ class ServoOperationUtilsConvert():
         ### 길이가 1이면 run_number 개수만큼 늘림
         for i in range(len(input_list_copy)):
             if len(input_list_copy[i]) == 1:
-                input_list_copy[i] = input_list_copy[i]*run_number
+                input_list_copy[i] *= run_number
         ### 리스트 붙이기 (return은 cube_ID_list와 input_list의 원소 리스트들)
         out_list = []
         out_list += [cube_ID_list]
@@ -772,6 +794,36 @@ class ServoOperationUtilsConvert():
             return start, stop
         else:
             raise ValueError("start_and_stop_list elements must be list (or tuple), or int.")
+    
+    ### duration 변환
+    def convert_servo_duration(self, servo_duration, servo_angle_list, run_number):
+        if len(servo_angle_list) == 1:
+            ### 스피드 만들기
+            speed = [[0]*len(servo_angle_list[0])]*run_number
+            ### 스텝 만들기
+            if len(servo_duration) == 1:
+                if len(servo_duration[0]) == 1:
+                    step = [servo_duration[0]*len(servo_angle_list[0])]*run_number
+                else:
+                    step = servo_duration*run_number
+            else:
+                step = servo_duration.copy()
+        else:
+            ### 스피드 만들기
+            speed = []
+            for angle_elem_list in servo_angle_list:
+                speed.append([0]*len(angle_elem_list))
+            ### 스텝 만들기
+            if len(servo_duration) == 1:
+                if len(servo_duration[0]) == 1:
+                    step = []
+                    for angle_elem_list in servo_angle_list:
+                        step.append(servo_duration[0]*len(angle_elem_list))
+                else: 
+                    step = servo_duration*run_number # 길이가 다른 경우는 len_check_elemental_list에서 걸러짐.
+            else:
+                step = servo_duration.copy()
+        return speed, step
 
 
 class ServoOperationUtils(ServoOperationUtilsCheck, ServoOperationUtilsProcess, ServoOperationUtilsSet, ServoOperationUtilsConvert):

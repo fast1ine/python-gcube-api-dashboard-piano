@@ -23,6 +23,7 @@ class ControllerStatus():
         self.servo_mode = [None]*connection_number # "single", "point"
         self.servo_angle = [None]*connection_number
         self.servo_angle_schedule = [[]]*connection_number
+        self.servo_timeout_schedule = [[]]*connection_number
 class ProcessedStatus():
     def __init__(self, connection_number):
         ### connection status

@@ -292,7 +292,7 @@ class ScheduledStepsStepperOperation(StepperOperationBase):
             ### status 등록
             self._robot_status[discovery_group].controller_status.stepper_mode[cube_ID_element] = "point"
             self._robot_status[discovery_group].controller_status.stepper_schedule_point_start[cube_ID_element] = [0]
-            self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[cube_ID_element] = [len(speed_list[i])]
+            self._robot_status[discovery_group].controller_status.stepper_schedule_point_end[cube_ID_element] = [len(speed_list[i])-1]
             self._robot_status[discovery_group].controller_status.stepper_schedule_point_repeat[cube_ID_element] = [1]
             self._robot_status[discovery_group].controller_status.stepper_speed_schedule[cube_ID_element] = speed_list[i]
             self._robot_status[discovery_group].controller_status.stepper_step_schedule[cube_ID_element] = step_list[i]
@@ -310,7 +310,7 @@ class ScheduledStepsStepperOperation(StepperOperationBase):
         time.sleep(0.2)
         sending_bytes = b""
         for i, cube_ID_element in enumerate(cube_ID_list):
-            sending_bytes += self._GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, [0], [len(speed_list[i])], [1], discovery_group, pause_list[i])
+            sending_bytes += self._GenerateProtocolInstance.SetScheduledPoints_bytes(cube_ID_element, [0], [len(speed_list[i])-1], [1], discovery_group, pause_list[i])
         if connection_number > 1:
             sending_bytes = self._GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
         self._write_copy(sending_bytes)
