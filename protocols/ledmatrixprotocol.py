@@ -49,17 +49,17 @@ class LEDMatrixProtocol():
         hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xE2, 0xA2, 0x00, 0x12, 0x70, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]
         ### generic process (discovery group & cube ID & robot number protocol)
         hexlist = self._generic_ledmatrix_hexlist(hexlist, cube_ID, discovery_group)
-        ### set picture (boolean list: len 8 -> xY0 to xY7, 0 -> on, 1 -> off)
+        ### set picture (boolean list: len 8 -> xY0 to xY7)
         hexlist[10:] = list(map(int, picture))
         return bytes(hexlist)
 
     def ArduinoI2CLEDMatrixWriteString_bytes(self, cube_ID, scroll_period, strings, discovery_group=None):
         ### FF FF FF 00 00 E3 A2 00 00 70 01 ~
-        hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xE3, 0xA2, 0x00, 0x00, 0x70, 0x01]
+        hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xE3, 0xA2, 0x00, 0x00, 0x70, 0x01, 0x00]
         ### generic process (discovery group & cube ID & robot number protocol)
         hexlist = self._generic_ledmatrix_hexlist(hexlist, cube_ID, discovery_group)
-        ### set data size
-        hexlist[7:9] = ByteUtils().int_to_hexlist(11+len(strings), 2) 
+        ### set data size (maximum strings: 20)
+        hexlist[7:9] = ByteUtils().int_to_hexlist(12+len(strings), 2) 
         ### set scroll period (1 to 200 -> 10ms to 2000ms)
         hexlist[10] = scroll_period
         ### set string (str: ascii available characters only)

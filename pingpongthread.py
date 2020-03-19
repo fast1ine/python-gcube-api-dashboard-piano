@@ -178,7 +178,6 @@ class PingPongThread(ReaderThread, OperationDerived):
             raise ValueError("time_seconds must positive value.")
         time.sleep(time_seconds)
 
-    # MotorOperation 오버라이딩
 
 
 
