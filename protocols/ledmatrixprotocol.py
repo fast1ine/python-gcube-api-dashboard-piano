@@ -62,7 +62,7 @@ class LEDMatrixProtocol():
         hexlist[7:9] = ByteUtils().int_to_hexlist(12+len(strings), 2) 
         ### set scroll period (1 to 200 -> 10ms to 2000ms)
         hexlist[10] = scroll_period
-        ### set string (str: ascii available characters only)
+        ### set string (str: ascii available characters only, maximum strings: 20)
         hexlist.extend([ord(c) for c in strings])
         return bytes(hexlist)
 

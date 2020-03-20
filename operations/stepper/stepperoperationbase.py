@@ -302,7 +302,7 @@ class ScheduledStepsStepperOperation(StepperOperationBase):
             sending_bytes += self._GenerateProtocolInstance.SetScheduledSteps_bytes(cube_ID_element, speed_list[i], step_list[i], discovery_group, True)
         if connection_number > 1:
             sending_bytes = self._GenerateProtocolInstance.SetAggregateSteps_bytes(discovery_group, sending_bytes)
-        ### 스케줄 설정 작동
+        ### 스케줄 설정 보내기
         self._write_copy(sending_bytes) 
         ### 1개 이상이면 agg 설정이 올 때까지 잡아두기
         StepperOperationUtils().wait_until_agg_set(self._get_robot_status, self._set_robot_status, discovery_group, connection_number)

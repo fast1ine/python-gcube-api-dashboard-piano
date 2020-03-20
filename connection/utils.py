@@ -13,7 +13,7 @@ class Utils():
 
     # 실수 체크
     def float_check(self, number, option=None) -> None:
-        if not (isinstance(number, int) or isinstance(number, float)):
+        if not isinstance(number, (int, float)):
             is_float = False
         else:
             is_float = True
@@ -41,10 +41,9 @@ class Utils():
     
     # 리스트로 변환
     def to_list(self, input_data) -> list:
-        if isinstance(input_data, list) or isinstance(input_data, tuple):
+        if isinstance(input_data, (list, tuple)):
             return list(input_data)
-        elif isinstance(input_data, int) or isinstance(input_data, float) \
-            or isinstance(input_data, str) or isinstance(input_data, bool) or input_data == None:
+        elif isinstance(input_data, (int, float, str, bool)) or input_data == None:
             return [input_data]
         else:
             raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or bool, or None.")
@@ -74,13 +73,20 @@ class Utils():
             i += 1
         return out_list
 
-    input_flag = False
-
-    def input(self, string):
-        Utils.input_flag = True
-
-    def print(self, string, option=None):
-        print(string)
+    ### bytedata에서 값 얻기 (자이로 값)
+    def getSignedIntfromByteData(self, data: int) -> int:
+        if data >= 128:
+            data -= 256
+        return data
+    
+    ### 가속도 값 얻기
+    def getACCDataToDegreeMinus90To90fromByteData(self, data: int) -> int:
+        data = self.getSignedIntfromByteData(data)
+        if data > 90:
+            data = 90
+        elif data < -90:
+            data = -90
+        return data
         
 
     

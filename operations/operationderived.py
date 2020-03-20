@@ -2,8 +2,9 @@ from protocols.generateprotocol import GenerateProtocol
 from operations.stepper.stepperoperation import StepperOperation
 from operations.servo.servooperation import ServoOperation
 from operations.ledmatrix.ledmatrixoperation import LEDMatrixOperation
+from operations.cube.cubeoperation import CubeOperation
 
-class OperationDerived(StepperOperation, ServoOperation, LEDMatrixOperation):
+class OperationDerived(StepperOperation, ServoOperation, LEDMatrixOperation, CubeOperation):
     def __init__(self, number, robot_status, start_check, write):
         self._GenerateProtocolInstance = GenerateProtocol(number)
         self._robot_status = robot_status
@@ -12,3 +13,4 @@ class OperationDerived(StepperOperation, ServoOperation, LEDMatrixOperation):
         StepperOperation.__init__(self, number, robot_status, start_check, write)
         ServoOperation.__init__(self, number, robot_status, start_check, write)
         LEDMatrixOperation.__init__(self, number, robot_status, start_check, write)
+        CubeOperation.__init__(self, number, robot_status, start_check, write)

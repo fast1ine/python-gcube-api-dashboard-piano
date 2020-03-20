@@ -9,33 +9,34 @@ class ProcessProtocol():
         self.robot_disconnect_flag = robot_disconnect_flag
         self.transport = transport
 
-    # 연결 평가
+    ### 연결 평가
     def evaluate_connection(self, discovery_group=None) -> None: 
         connection_number = self.transport._robot_status[discovery_group].controller_status.connection_number
         connected_robots_number = self.transport._robot_status[discovery_group].processed_status.connected_number
-        if not self.is_full_connect and connected_robots_number == connection_number: # 모두 연결
+        ### 모두 연결
+        if not self.is_full_connect and connected_robots_number == connection_number: 
             print("Fully connected.") 
-            ### 설정
             self.is_full_connect = True
-        elif connected_robots_number != connection_number and not self.robot_disconnect_flag: # 전부 연결되지 않았을 때 & disconnect가 아닐 때
-            if self.is_full_connect and connected_robots_number != 0: # 이전에 전부 연결되었다면 & 마스터가 끊어진 것이 아니라면
+        ### 전부 연결되지 않았을 때 & disconnect가 아닐 때
+        elif connected_robots_number != connection_number and not self.robot_disconnect_flag: 
+            ### 이전에 전부 연결되었다면 & 마스터가 끊어진 것이 아니라면
+            if self.is_full_connect and connected_robots_number != 0: 
                 print("Robot disconnected after full connection. Close all connection.") # 모두 연결 이후에 슬레이브 로봇 연결이 끊어지면 다시 연결이 안됨.
                 self.transport.serial.close() # 시리얼 닫음 (transport의 close 함수를 사용하면 작동이 안 됨.)
                 self.transport.reconnect()
-                ### 설정
                 self.is_full_connect = False
                 self.transport._init_robot_status(discovery_group)
+            ### 이외
             else:
-                ### 설정
                 self.is_full_connect = False
-        elif connected_robots_number != connection_number and self.robot_disconnect_flag: # 전부 연결되지 않았을 때 & disconnect일 때
+        #### 전부 연결되지 않았을 때 & disconnect일 때
+        elif connected_robots_number != connection_number and self.robot_disconnect_flag: 
             # 시리얼 안 닫음.
-            print("Disconnect master robot.")
-            ### 설정
             self.is_full_connect = False
             self.transport._robot_status[discovery_group].controller_status.connection_number = 0
             self.robot_disconnect_flag = False
-        else: # 아무것도 아니면 그대로 내보냄
+        ### 아무것도 아니면 그대로 내보냄
+        else: 
             pass
 
     # OP 코드 처리
@@ -51,6 +52,8 @@ class ProcessProtocol():
             return self._stepper_point(discovery_group)
         elif OP_code == 0xCD: # agg 설정
             return self._set_agg(discovery_group)
+        elif OP_code == 0xB8: # 센서 데이터
+            return self._get_sensor_data(discovery_group)
         else:
             return self._unregistered()
 
@@ -118,7 +121,8 @@ class ProcessProtocol():
             print("Schedule set.")
             self.transport._robot_status[discovery_group].processed_status.stepper_schedule_set[0] = True 
         elif len(self.buffer) == 17:
-            #cube_ID = self.buffer[3]
+            #cube_ID = self.buffer[3] 
+            ### master cube의 재생 내역만 나타남.
             schedule_idx = Utils().twobyte_hexlist_to_int(self.buffer[13], self.buffer[14])
             play_idx = self.buffer[15]
             repeat_number = self.buffer[16]
@@ -148,4 +152,36 @@ class ProcessProtocol():
         self.transport._robot_status[discovery_group].processed_status.stepper_agg_set = True
         print("Aggregator set.")
         return None
-        
+    
+    def _get_sensor_data(self, discovery_group) -> None:
+        connection_number = self.transport._robot_status[discovery_group].controller_status.connection_number
+        ### 큐브 ID
+        if connection_number > 1:
+            cube_ID = self.buffer[3]
+        else:
+            cube_ID = 0
+        ### 버튼 상태
+        button = self.buffer[11]
+        ### 자이로 센서 값
+        x1 = Utils().getSignedIntfromByteData(self.buffer[12])
+        x2 = Utils().getSignedIntfromByteData(self.buffer[13])
+        x3 = Utils().getSignedIntfromByteData(self.buffer[14])
+        ### 가속도 센서 값
+        xx = Utils().getACCDataToDegreeMinus90To90fromByteData(self.buffer[15])
+        yy = -Utils().getACCDataToDegreeMinus90To90fromByteData(self.buffer[16])
+        zz = Utils().getACCDataToDegreeMinus90To90fromByteData(self.buffer[17])
+        ### 근접 센서 값
+        prox = self.buffer[18]
+        ### AIN (?) 값
+        ad = self.buffer[19]
+        ### status 등록
+        self.transport._robot_status[discovery_group].processed_status.button[0] = button
+        self.transport._robot_status[discovery_group].processed_status.sensor_gyro_xyz[0] = [x1, x2, x3]
+        self.transport._robot_status[discovery_group].processed_status.sensor_acc_xyz[0] = [xx, yy, zz]
+        prox_old = self.transport._robot_status[discovery_group].processed_status.sensor_prox[0]
+        self.transport._robot_status[discovery_group].processed_status.sensor_prox_old[0] = prox_old
+        self.transport._robot_status[discovery_group].processed_status.sensor_prox[0] = prox
+        self.transport._robot_status[discovery_group].processed_status.AIN[0] = ad
+        ### print
+        print("CubeID:", cube_ID+1, ", Button:", button, ", Gyro:", [x1, x2, x3], ", Acc:", [xx, yy, zz], ", Prox:", prox, ", AIN:", ad)
+        return None

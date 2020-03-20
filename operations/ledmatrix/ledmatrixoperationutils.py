@@ -1,4 +1,4 @@
-class LEDMatrixUtils():
+class LEDMatrixOperationUtils():
     ###  정수 체크
     def integer_check(self, number, option=None) -> None:
         if not isinstance(number, int):
@@ -49,7 +49,7 @@ class LEDMatrixUtils():
 
     ### scroll period 체크 & 처리
     def process_scroll_period(self, scroll, string_length):
-        if not isinstance(scroll, int) and isinstance(scroll, float):
+        if not isinstance(scroll, (int, float)):
             raise ValueError("Scroll time value must be int or float.")
         elif scroll < 0:
             raise ValueError("Scroll time value must be positive.")
@@ -64,19 +64,19 @@ class LEDMatrixUtils():
         
     ### picture 체크 & 처리
     def process_picture(self, picture):
-        if not isinstance(picture, list) and not isinstance(picture, tuple):
+        if not isinstance(picture, (list, tuple)):
             raise ValueError("Picture must be list.")
         if len(picture) != 8:
             raise ValueError("Picture must be 8 by 8 list of list (matrix).")
         picture_list = [0]*8
         for j, pic_elem_list in enumerate(picture):
-            if not isinstance(picture, list) and not isinstance(picture, tuple):
+            if not isinstance(picture, (list, tuple)):
                 raise ValueError("Picture must be 8 by 8 list of list (matrix).")
             elif len(pic_elem_list) != 8:
                 raise ValueError("Picture must be 8 by 8 list of list (matrix).")
             picture_list_element = 0
             for i, pic_pixel in enumerate(pic_elem_list):
-                if pic_pixel is not 0 and pic_pixel is not 1:
+                if not (pic_pixel is 0 or pic_pixel is 1):
                     raise ValueError("Picture elements must be 0 or 1.")
                 else:
                     picture_list_element += (2**i)*pic_pixel

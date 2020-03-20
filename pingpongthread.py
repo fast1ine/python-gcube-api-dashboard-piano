@@ -158,7 +158,7 @@ class PingPongThread(ReaderThread, OperationDerived):
 
     # RPM을 SPS로 변환
     def RPM_to_SPS(self, RPM):
-        if not (isinstance(RPM, float) or isinstance(RPM, int)):
+        if not isinstance(RPM, (int, float)):
             raise ValueError("RPM must be float or int value")
         else:
             return self._GenerateProtocolInstance.RPM_to_SPS(RPM)
@@ -172,7 +172,7 @@ class PingPongThread(ReaderThread, OperationDerived):
 
     # time_seconds 초 동안 기다림
     def wait(self, time_seconds):
-        if not isinstance(time_seconds, int) and not isinstance(time_seconds, float):
+        if not isinstance(time_seconds, (int, float)):
             raise ValueError("time_seconds must be int or float.")
         elif time_seconds < 0:
             raise ValueError("time_seconds must positive value.")

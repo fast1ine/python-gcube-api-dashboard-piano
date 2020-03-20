@@ -1,3 +1,4 @@
+from example_base import GetParentPath
 from pingpongthread import PingPongThread
 import time
 
@@ -9,9 +10,8 @@ time.sleep(2)
 
 if True:
     ### write a pixel
-    PingPongThreadInstance.write( \
-        PingPongThreadInstance._GenerateProtocolInstance.GetSensors_bytes( \
-            0, action_method=2, get_method=0, discovery_group=None))
+    PingPongThreadInstance.write(
+        PingPongThreadInstance._GenerateProtocolInstance.GetSensors_bytes(0, action_method=100, discovery_group=None))
     while True:
-        time.sleep(1)
+        time.sleep(360) # pass하면 오류나서 밀림.
 

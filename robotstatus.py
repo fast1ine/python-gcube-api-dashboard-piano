@@ -24,11 +24,13 @@ class ControllerStatus():
         self.servo_angle = [None]*connection_number
         self.servo_angle_schedule = [[]]*connection_number
         self.servo_timeout_schedule = [[]]*connection_number
+        ### sensor status
+        self.get_sensor_mode = [None]*connection_number # "periodic", "oneshot"
 class ProcessedStatus():
     def __init__(self, connection_number):
         ### connection status
         self.connected_number = 0
-        self.MAC_address = [None]*2
+        self.MAC_address = [None, None]
         ### stepper status
         self.stepper_agg_set = None
         self.stepper_schedule_set = [None]*connection_number
@@ -37,3 +39,10 @@ class ProcessedStatus():
         self.stepper_played_schedule_idx = [None]*connection_number
         self.stepper_played_point_idx = [None]*connection_number
         self.stepper_played_repeat_idx = [None]*connection_number
+        ### sensor value status
+        self.button = [None]*connection_number
+        self.sensor_gyro_xyz = [[None, None, None]]*connection_number
+        self.sensor_acc_xyz = [[None, None, None]]*connection_number
+        self.sensor_prox = [None]*connection_number
+        self.sensor_prox_old = [None]*connection_number
+        self.AIN = [None]*connection_number

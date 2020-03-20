@@ -1,5 +1,5 @@
 from protocols.generateprotocol import GenerateProtocol
-from operations.ledmatrix.ledmatrixutils import LEDMatrixUtils
+from operations.ledmatrix.ledmatrixoperationutils import LEDMatrixOperationUtils
 import time
 
 class LEDMatrixOperation():
@@ -24,12 +24,12 @@ class LEDMatrixOperation():
         ### 연결 개수
         connection_number = self._robot_status[discovery_group].controller_status.connection_number
         ### cube ID 처리
-        cube_ID = LEDMatrixUtils().process_cube_ID(cube_ID, connection_number)
+        cube_ID = LEDMatrixOperationUtils().process_cube_ID(cube_ID, connection_number)
         ### coordinate 체크 (int, 0 to 7)
-        LEDMatrixUtils().check_pixel_coord(x_coordinate)
-        LEDMatrixUtils().check_pixel_coord(y_coordinate)
+        LEDMatrixOperationUtils().check_pixel_coord(x_coordinate)
+        LEDMatrixOperationUtils().check_pixel_coord(y_coordinate)
         ### on/off 체크 (bool)
-        LEDMatrixUtils().check_onoff(onoff)
+        LEDMatrixOperationUtils().check_onoff(onoff)
         ### 바이트 쓰기
         sending_bytes = self._GenerateProtocolInstance.ArduinoI2CLEDMatrixWritePixel_bytes(cube_ID, x_coordinate, y_coordinate, onoff, discovery_group)
         self._write_copy(sending_bytes) 
@@ -42,11 +42,11 @@ class LEDMatrixOperation():
         ### 연결 개수
         connection_number = self._robot_status[discovery_group].controller_status.connection_number
         ### cube ID 처리
-        cube_ID = LEDMatrixUtils().process_cube_ID(cube_ID, connection_number)
+        cube_ID = LEDMatrixOperationUtils().process_cube_ID(cube_ID, connection_number)
         ### string 체크 (str, len: 1 to 20, ASCII)
-        LEDMatrixUtils().check_string(string)
+        LEDMatrixOperationUtils().check_string(string)
         ### scroll time 처리 (float, sec, return: 1 to 200)
-        scroll_time = LEDMatrixUtils().process_scroll_period(scroll_time, len(string))
+        scroll_time = LEDMatrixOperationUtils().process_scroll_period(scroll_time, len(string))
         ### 바이트 쓰기
         sending_bytes = self._GenerateProtocolInstance.ArduinoI2CLEDMatrixWriteString_bytes(cube_ID, scroll_time, string, discovery_group)
         self._write_copy(sending_bytes) 
@@ -59,7 +59,7 @@ class LEDMatrixOperation():
         ### 연결 개수
         connection_number = self._robot_status[discovery_group].controller_status.connection_number
         ### cube ID 처리
-        cube_ID = LEDMatrixUtils().process_cube_ID(cube_ID, connection_number)
+        cube_ID = LEDMatrixOperationUtils().process_cube_ID(cube_ID, connection_number)
         ### 바이트 쓰기
         sending_bytes = self._GenerateProtocolInstance.ArduinoI2CLEDMatrixWriteString_bytes(cube_ID, 0, "", discovery_group)
         self._write_copy(sending_bytes)
@@ -72,9 +72,9 @@ class LEDMatrixOperation():
         ### 연결 개수
         connection_number = self._robot_status[discovery_group].controller_status.connection_number
         ### cube ID 처리
-        cube_ID = LEDMatrixUtils().process_cube_ID(cube_ID, connection_number)
+        cube_ID = LEDMatrixOperationUtils().process_cube_ID(cube_ID, connection_number)
         ### picture 체크 & 처리 (8 * 8 matrix (list of list), elements는 0 or 1.)
-        picture = LEDMatrixUtils().process_picture(picture)
+        picture = LEDMatrixOperationUtils().process_picture(picture)
         ### 바이트 쓰기
         sending_bytes = self._GenerateProtocolInstance.ArduinoI2CLEDMatrixWritePicture_bytes(cube_ID, picture, discovery_group)
         self._write_copy(sending_bytes)

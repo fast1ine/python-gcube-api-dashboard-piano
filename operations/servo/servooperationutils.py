@@ -9,7 +9,7 @@ class ServoOperationUtilsCheck():
 
     ### 실수 체크
     def float_check(self, number, option=None) -> None:
-        if not (isinstance(number, int) or isinstance(number, float)):
+        if not isinstance(number, (int, float)):
             is_float = False
         else:
             is_float = True
@@ -61,14 +61,14 @@ class ServoOperationUtilsCheck():
     ### wait 체크
     def check_wait(self, wait, run_option):
         if run_option == "continue":
-            if not isinstance(wait, int) and not isinstance(wait, float):
+            if not isinstance(wait, (int, float)):
                 raise ValueError("wait must be int or float in continue mode.")
             elif wait < 0:
                 raise ValueError("wait must be positive.")
         else:
-            if not isinstance(wait, int) and not isinstance(wait, float) and not isinstance(wait, str):
+            if not isinstance(wait, (int, float, str)):
                 raise ValueError("wait must be int, float, or str.")
-            elif (isinstance(wait, int) or isinstance(wait, float)) and wait < 0:
+            elif isinstance(wait, (int, float)) and wait < 0:
                 raise ValueError("wait must be positive.")
             elif isinstance(wait, str) and wait.lower() != "step" and wait.lower() != "schedule":
                 raise ValueError("Unknown wait option.")
@@ -89,11 +89,11 @@ class ServoOperationUtilsCheck():
     def check_list_of_list(self, input_list, mode_name, list_name, run_option):
         if run_option.lower != "point":
             for input_list_element in input_list:
-                if not (isinstance(input_list_element, list) or isinstance(input_list_element, tuple)):
+                if not isinstance(input_list_element, (list, tuple)):
                     raise ValueError("In {} mode, all elements of {} must be list or tuple.".format(mode_name, list_name)) 
         else:
             for input_list_element in input_list:
-                if not (isinstance(input_list_element, list) or isinstance(input_list_element, tuple)):
+                if not isinstance(input_list_element, (list, tuple)):
                     raise ValueError("All elements of {} must be list or tuple.".format(list_name))
 
     ### 내부 원소 리스트 길이 체크 함수
@@ -140,7 +140,7 @@ class ServoOperationUtilsCheck():
     def check_servo_duration(self, servo_duration):
         for duration_elem_list in servo_duration:
             for duration in duration_elem_list:
-                if not isinstance(duration, int) and not isinstance(duration, float):
+                if not isinstance(duration, (int, float)):
                     raise ValueError("Servo duration must be int or float, and in between 0 to 65.535 (sec).")
                 elif duration < 0 or 65.535 < duration:
                     raise ValueError("Servo duration must be int or float, and in between 0 to 65.535 (sec).")
@@ -299,7 +299,7 @@ class ServoOperationUtilsProcess():
             else:
                 ### duration이 list of list가 아니면 list를 하나 더 씌움.
                 if len(servo_duration) == 1:
-                    if not isinstance(servo_duration[0], list) and not isinstance(servo_duration[0], tuple):
+                    if not isinstance(servo_duration[0], (list, tuple)):
                         servo_duration = [servo_duration]
                 if speed_list != [None] or step_list != [None] or time_list != [None]:
                     print("Warning. If servo_duration is entered, speed_list, step_list, and time_list are ignored.")
@@ -314,7 +314,7 @@ class ServoOperationUtilsProcess():
                     start_point_list = []
                     stop_point_list = []
                     for start_and_stop_list_element in start_and_stop_list:
-                        if not isinstance(start_and_stop_list_element, list) and not isinstance(start_and_stop_list_element, tuple):
+                        if not isinstance(start_and_stop_list_element, (list, tuple)):
                             raise ValueError("start_and_stop_list elements must be list or tuple.")
                         start_point_list_out, stop_point_list_out = ServoOperationUtilsConvert().convert_start_and_stop_list(start_and_stop_list_element)
                         start_point_list.append(start_point_list_out)
@@ -326,7 +326,7 @@ class ServoOperationUtilsProcess():
                 start_point_list = []
                 stop_point_list = []
                 for start_and_stop_list_element in start_and_stop_list:
-                    if not isinstance(start_and_stop_list_element, list) and not isinstance(start_and_stop_list_element, tuple):
+                    if not isinstance(start_and_stop_list_element, (list, tuple)):
                         raise ValueError("start_and_stop_list elements must be list or tuple.")
                     start_point_list_out, stop_point_list_out = ServoOperationUtilsConvert().convert_start_and_stop_list(start_and_stop_list_element)
                     start_point_list.append(start_point_list_out)
@@ -364,10 +364,9 @@ class ServoOperationUtilsConvert():
 
     # 리스트로 변환
     def to_list(self, input_data) -> list:
-        if isinstance(input_data, list) or isinstance(input_data, tuple):
+        if isinstance(input_data, (list, tuple)):
             return list(input_data)
-        elif isinstance(input_data, int) or isinstance(input_data, float) \
-            or isinstance(input_data, str) or isinstance(input_data, bool) or input_data == None:
+        elif isinstance(input_data, (int, float, str, bool)) or input_data == None:
             return [input_data]
         else:
             raise ValueError("Error. Enter list, or tuple, or int, or float, or str, or bool, or None.")
@@ -431,7 +430,7 @@ class ServoOperationUtilsConvert():
                     if (isinstance(speed_list[i][j], str) and speed_list[i][j].lower() in ["stop", "sleep"]) or speed_list[i][j] == 0: # 스피드가 0이면 sleep 모드
                         speed_list[i][j] = 0
                         sleep_list[i][j] = True
-                    if not is_schedule and (isinstance(speed_list[i][j], list) or isinstance(speed_list[i][j], tuple)):
+                    if not is_schedule and isinstance(speed_list[i][j], (list, tuple)):
                         raise ValueError("In {} mode, elements of lists cannot be list or tuple.".format(run_option.lower()))
                     ServoOperationUtilsCheck().float_check(speed_list[i][j], "stop or sleep")
                     speed_list[i][j] = ServoOperationUtilsProcess().truncate_RPM_speed(speed_list[i][j], raise_error) # speed 자르기
@@ -767,9 +766,9 @@ class ServoOperationUtilsConvert():
         # [2, [2, 3], [3], [4, 5]]
         start = []
         stop = []
-        if isinstance(start_and_stop_list, list) or isinstance(start_and_stop_list, tuple):
+        if isinstance(start_and_stop_list, (list, tuple)):
             for i in range(len(start_and_stop_list)):
-                if isinstance(start_and_stop_list[i], list) or isinstance(start_and_stop_list[i], tuple):
+                if isinstance(start_and_stop_list[i], (list, tuple)):
                     if len(start_and_stop_list[i]) == 1:
                         start_and_stop_list[i] *= 2
                     elif len(start_and_stop_list[i]) != 2:

@@ -22,18 +22,18 @@ class CubeProtocol():
         hexlist[4] = self.connection_number*16 
         return hexlist
 
-    def SetMultiroleAggregator_bytes(self):
-        SetMultiroleAggregator_hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x00, 0xAA, 0xAF]
-        pass
-
-    def GetSensors_bytes(self, cube_ID, action_method, get_method, discovery_group):
-        hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xC8, 0xB8, 0x00, 0x0B, 0x00, 0x00]
+    #def SetMultiroleAggregator_bytes(self):
+    #    SetMultiroleAggregator_hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x00, 0xAA, 0xAF]
+    #    pass
+    
+    def GetSensors_bytes(self, cube_ID, action_method, discovery_group=None):
+        hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xC8, 0xB8, 0x00, 0x0B, 0x00, 0x01]
         ### set discovery group
         hexlist = self._set_discovery_group(hexlist, discovery_group)
         ### set cube ID
         hexlist = self._set_cube_ID(hexlist, cube_ID)
-        ### set action method (0 -> single or stop sampling, 2 to 10 -> sample period 0.2s to 1.0s)
+        ### set action method (0 -> single or stop sampling, 1 to 100 -> sample period 0.01s to 1.0s)
         hexlist[9] = action_method
         ### set get method (0 -> default, 1 -> 8bit real)
-        hexlist[10] = get_method
+        #hexlist[10] = get_method
         return bytes(hexlist)

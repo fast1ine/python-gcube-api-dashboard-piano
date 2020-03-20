@@ -50,7 +50,7 @@ class rawProtocol(Protocol, ProcessProtocol):
         except:
             pass
         print("Serial disconnected. Sleep 3 seconds.")
-        #raise exc
+        #raise exc # 오류 확인용. try 때문에 traceback이 안 됨.
         time.sleep(3)
 
     #데이터가 들어오면 이곳에서 처리함.
