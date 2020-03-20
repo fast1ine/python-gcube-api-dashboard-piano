@@ -173,7 +173,7 @@ class ProcessProtocol():
         # (자이로, 가속도가 바뀌었나?)
         ### 근접 센서 값
         prox = self.buffer[18]
-        ### AIN (?) 값
+        ### AIN (외부 센서) 값
         ad = self.buffer[19]
         ### status 등록
         self.transport._robot_status[discovery_group].processed_status.button[0] = button

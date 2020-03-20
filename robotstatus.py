@@ -45,4 +45,4 @@ class ProcessedStatus():
         self.sensor_acc_xyz = [[None, None, None]]*connection_number
         self.sensor_prox = [None]*connection_number
         self.sensor_prox_old = [None]*connection_number
-        self.AIN = [None]*connection_number
+        self.AIN = [None]*connection_number # External sensor
