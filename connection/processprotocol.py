@@ -170,6 +170,7 @@ class ProcessProtocol():
         xx = Utils().getACCDataToDegreeMinus90To90fromByteData(self.buffer[15])
         yy = -Utils().getACCDataToDegreeMinus90To90fromByteData(self.buffer[16])
         zz = Utils().getACCDataToDegreeMinus90To90fromByteData(self.buffer[17])
+        # (자이로, 가속도가 바뀌었나?)
         ### 근접 센서 값
         prox = self.buffer[18]
         ### AIN (?) 값
