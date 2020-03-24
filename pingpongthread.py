@@ -37,11 +37,13 @@ class PingPongThread(ReaderThread, OperationDerived):
         except:
             pass
 
-    #def __getitem__(self, key, cube_ID):
-    #    pass
-
-    #def __setitem__(self, key, item):
-    #    pass
+    def __getitem__(self, key):
+        if key in self._robot_status.controller_status.__dict__.keys():
+            return self._robot_status.controller_status.__dict__[key]
+        elif key in self._robot_status.processed_status.__dict__.keys():
+            return self._robot_status.processed_status.__dict__[key]
+        else:
+            raise ValueError("There is no \"{}\" item in the robot status!")
 
     # 시작 체크
     def _start_check(self):

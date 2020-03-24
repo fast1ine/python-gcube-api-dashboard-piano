@@ -47,7 +47,6 @@ class ProcessedStatus():
         self.sensor_prox_old = [None]*connection_number
         self.AIN = [None]*connection_number # External sensor
 
-
     def list_product_copy(self, input_list, number) -> list:
         input_list = input_list[0] # ex) [[2, 3, 4, 5]]
         out_list = [] # ex) number=3, [[2, 3, 4, 5], [2, 3, 4, 5], [2, 3, 4, 5]]
