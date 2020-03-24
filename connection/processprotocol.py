@@ -176,13 +176,13 @@ class ProcessProtocol():
         ### AIN (외부 센서) 값
         ad = self.buffer[19]
         ### status 등록
-        self.transport._robot_status[discovery_group].processed_status.button[0] = button
-        self.transport._robot_status[discovery_group].processed_status.sensor_gyro_xyz[0] = [x1, x2, x3]
-        self.transport._robot_status[discovery_group].processed_status.sensor_acc_xyz[0] = [xx, yy, zz]
-        prox_old = self.transport._robot_status[discovery_group].processed_status.sensor_prox[0]
-        self.transport._robot_status[discovery_group].processed_status.sensor_prox_old[0] = prox_old
-        self.transport._robot_status[discovery_group].processed_status.sensor_prox[0] = prox
-        self.transport._robot_status[discovery_group].processed_status.AIN[0] = ad
+        self.transport._robot_status[discovery_group].processed_status.button[cube_ID] = button
+        self.transport._robot_status[discovery_group].processed_status.sensor_gyro_xyz[cube_ID] = [x1, x2, x3]
+        self.transport._robot_status[discovery_group].processed_status.sensor_acc_xyz[cube_ID] = [xx, yy, zz]
+        prox_old = self.transport._robot_status[discovery_group].processed_status.sensor_prox[cube_ID]
+        self.transport._robot_status[discovery_group].processed_status.sensor_prox_old[cube_ID] = prox_old
+        self.transport._robot_status[discovery_group].processed_status.sensor_prox[cube_ID] = prox
+        self.transport._robot_status[discovery_group].processed_status.AIN[cube_ID] = ad
         ### print
         print("CubeID:", cube_ID+1, ", Button:", button, ", Gyro:", [x1, x2, x3], ", Acc:", [xx, yy, zz], ", Prox:", prox, ", AIN:", ad)
         return None

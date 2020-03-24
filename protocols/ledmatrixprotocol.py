@@ -53,7 +53,7 @@ class LEDMatrixProtocol():
         hexlist[10:] = list(map(int, picture))
         return bytes(hexlist)
 
-    def ArduinoI2CLEDMatrixWriteString_bytes(self, cube_ID, scroll_period, strings, discovery_group=None):
+    def ArduinoI2CLEDMatrixWriteString_bytes(self, cube_ID, strings, scroll_period, discovery_group=None):
         ### FF FF FF 00 00 E3 A2 00 00 70 01 ~
         hexlist = [0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xE3, 0xA2, 0x00, 0x00, 0x70, 0x01, 0x00]
         ### generic process (discovery group & cube ID & robot number protocol)

@@ -36,7 +36,7 @@ class LEDMatrixOperation():
         ### sleep
         time.sleep(0.2)
 
-    def LED_matrix_write_string(self, cube_ID, scroll_time, string, discovery_group=None):
+    def LED_matrix_write_string(self, cube_ID, string, scroll_time, discovery_group=None):
         ### start 체크
         self._start_check_copy()
         ### 연결 개수
@@ -48,7 +48,7 @@ class LEDMatrixOperation():
         ### scroll time 처리 (float, sec, return: 1 to 200)
         scroll_time = LEDMatrixOperationUtils().process_scroll_period(scroll_time, len(string))
         ### 바이트 쓰기
-        sending_bytes = self._GenerateProtocolInstance.ArduinoI2CLEDMatrixWriteString_bytes(cube_ID, scroll_time, string, discovery_group)
+        sending_bytes = self._GenerateProtocolInstance.ArduinoI2CLEDMatrixWriteString_bytes(cube_ID, string, scroll_time, discovery_group)
         self._write_copy(sending_bytes) 
         ### sleep
         time.sleep(0.2)

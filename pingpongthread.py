@@ -37,6 +37,12 @@ class PingPongThread(ReaderThread, OperationDerived):
         except:
             pass
 
+    #def __getitem__(self, key, cube_ID):
+    #    pass
+
+    #def __setitem__(self, key, item):
+    #    pass
+
     # 시작 체크
     def _start_check(self):
         if not PingPongThread._is_start:
