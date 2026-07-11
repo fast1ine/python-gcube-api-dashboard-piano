@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PingPong Robot Monitor</title>
+  <link rel="icon" href="/pingpong-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <img src="/pingpong-mark.svg" alt="" width="40" height="40">
+      <div class="brand-text">
+        <h1>PingPong Robot Monitor</h1>
+        <p id="device-summary">연결 대기 중</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="status-badge idle" id="status-badge">
+        <span class="status-dot"></span>
+        <span id="status-text">Idle</span>
+      </span>
+      <button class="button secondary" id="scan-button" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12a9 9 0 0 0-15-6.7L3 8"></path>
+          <path d="M3 3v5h5"></path>
+          <path d="M3 12a9 9 0 0 0 15 6.7L21 16"></path>
+          <path d="M16 16h5v5"></path>
+        </svg>
+        장치 검색
+      </button>
+      <button class="button primary" id="connect-button" type="button">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2v10"></path>
+          <path d="M18.4 6.6a9 9 0 1 1-12.8 0"></path>
+        </svg>
+        연결
+      </button>
+      <button class="button danger" id="disconnect-button" type="button" disabled>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 12V6"></path>
+          <path d="M14 6v6"></path>
+          <path d="M4 10h16"></path>
+          <path d="M6 10v3a6 6 0 0 0 12 0v-3"></path>
+        </svg>
+        연결 해제
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <nav class="view-tabs" aria-label="페이지 전환">
+      <a class="active" href="/" aria-current="page">대시보드</a>
+      <a href="/piano">웹 피아노</a>
+    </nav>
+    <section class="control-band" aria-labelledby="connection-settings-title">
+      <div class="section-heading">
+        <h2 id="connection-settings-title">연결 설정</h2>
+        <span id="scan-status">장치를 검색하세요.</span>
+      </div>
+      <div class="control-grid">
+        <label class="field">
+          <span>그룹 ID</span>
+          <input id="group-id" value="02" maxlength="2" inputmode="numeric" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>로봇 수</span>
+          <input id="robot-count" type="number" value="1" min="1" max="8" step="1">
+        </label>
+        <label class="field">
+          <span>센서 주기</span>
+          <div class="input-unit">
+            <input id="sensor-period" type="number" value="0.1" min="0.01" max="1" step="0.01">
+            <span>초</span>
+          </div>
+        </label>
+        <label class="field">
+          <span>연결 제한</span>
+          <div class="input-unit">
+            <input id="connection-timeout" type="number" value="30" min="0" step="1">
+            <span>초</span>
+          </div>
+        </label>
+        <label class="field device-field">
+          <span>연결 장치</span>
+          <select id="device-select">
+            <option value="">자동 선택</option>
+          </select>
+        </label>
+        <label class="toggle-field">
+          <input id="auto-sensor" type="checkbox" checked>
+          <span class="toggle-track"><span></span></span>
+          <span>센서 자동 수신</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="metrics-band" aria-label="연결 요약">
+      <div class="metric">
+        <span>Bluetooth</span>
+        <strong id="metric-bluetooth">-</strong>
+      </div>
+      <div class="metric">
+        <span>전송 방식</span>
+        <strong id="metric-transport">-</strong>
+      </div>
+      <div class="metric wide">
+        <span>장치</span>
+        <strong id="metric-device">-</strong>
+      </div>
+      <div class="metric">
+        <span>그룹</span>
+        <strong id="metric-group">00</strong>
+      </div>
+      <div class="metric">
+        <span>연결</span>
+        <strong id="metric-connection">0/0</strong>
+      </div>
+      <div class="metric">
+        <span>주소</span>
+        <strong id="metric-mac">-</strong>
+      </div>
+      <div class="metric">
+        <span>최근 갱신</span>
+        <strong id="metric-updated">-</strong>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <section class="data-panel" aria-labelledby="robot-status-title">
+        <div class="section-heading table-heading">
+          <div>
+            <h2 id="robot-status-title">로봇 상태</h2>
+            <span id="row-count">0 cubes</span>
+          </div>
+          <span class="live-indicator" id="live-indicator">
+            <span></span>
+            LIVE
+          </span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cube</th>
+                <th>Sensor</th>
+                <th>Button</th>
+                <th>Gyro XYZ</th>
+                <th>Acc XYZ</th>
+                <th>Prox</th>
+                <th>Prev</th>
+                <th>AIN</th>
+                <th>Stepper</th>
+                <th>Speed</th>
+                <th>Step</th>
+                <th>Paused</th>
+                <th>Servo</th>
+                <th>Angle</th>
+              </tr>
+            </thead>
+            <tbody id="robot-rows">
+              <tr class="empty-row">
+                <td colspan="14">연결된 로봇이 없습니다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="log-panel" aria-labelledby="activity-log-title">
+        <div class="section-heading">
+          <h2 id="activity-log-title">활동 로그</h2>
+          <button class="icon-button" id="clear-log-button" type="button" title="화면에서 로그 지우기">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 6h18"></path>
+              <path d="M8 6V4h8v2"></path>
+              <path d="M19 6l-1 14H6L5 6"></path>
+              <path d="M10 11v5"></path>
+              <path d="M14 11v5"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="log-list" id="log-list" aria-live="polite"></div>
+      </aside>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

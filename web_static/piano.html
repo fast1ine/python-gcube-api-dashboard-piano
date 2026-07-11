@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PingPong Web Piano</title>
+  <link rel="icon" href="/pingpong-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <img src="/pingpong-mark.svg" alt="" width="40" height="40">
+      <div class="brand-text">
+        <h1>PingPong Web Piano</h1>
+        <p>Robot buzzer instrument</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="status-badge idle" id="piano-status-badge">
+        <span class="status-dot"></span>
+        <span id="piano-status-text">Idle</span>
+      </span>
+      <a class="button secondary header-link" href="/">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>대시보드</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="app-main piano-main">
+    <nav class="view-tabs" aria-label="페이지 전환">
+      <a href="/">대시보드</a>
+      <a class="active" href="/piano" aria-current="page">웹 피아노</a>
+    </nav>
+
+    <section class="piano-status-band" aria-label="피아노 연결 상태">
+      <div class="instrument-state">
+        <span class="instrument-light" id="instrument-light"></span>
+        <div>
+          <span>출력 장치</span>
+          <strong id="instrument-device">로봇 연결 필요</strong>
+        </div>
+      </div>
+      <div class="piano-settings">
+        <label class="compact-field">
+          <span>큐브</span>
+          <select id="piano-cube" disabled><option value="1">Cube 1</option></select>
+        </label>
+        <label class="compact-field">
+          <span>음 길이</span>
+          <select id="note-duration">
+            <option value="120">짧게 · 120 ms</option>
+            <option value="250" selected>보통 · 250 ms</option>
+            <option value="500">길게 · 500 ms</option>
+            <option value="900">지속 · 900 ms</option>
+          </select>
+        </label>
+        <div class="octave-control" aria-label="옥타브 설정">
+          <span>옥타브</span>
+          <div>
+            <button class="icon-button bordered" id="octave-down" type="button" title="옥타브 내리기">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
+            </button>
+            <strong id="octave-value">4</strong>
+            <button class="icon-button bordered" id="octave-up" type="button" title="옥타브 올리기">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            </button>
+          </div>
+        </div>
+        <button class="button stop-note" id="stop-note" type="button" disabled>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12"></rect></svg>
+          <span>정지</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="now-playing-band" aria-live="polite">
+      <div>
+        <span>NOW PLAYING</span>
+        <strong id="current-note">-</strong>
+      </div>
+      <div class="key-map" id="key-map">A W S E D F T G Y H U J K</div>
+    </section>
+
+    <section class="keyboard-section" aria-label="피아노 건반">
+      <div class="keyboard-scroll">
+        <div class="piano-keyboard" id="piano-keyboard"></div>
+      </div>
+    </section>
+
+    <section class="presets-section" aria-labelledby="presets-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="presets-title">빠른 연주</h2>
+          <span>선택한 큐브에서 재생</span>
+        </div>
+      </div>
+      <div class="preset-list">
+        <button class="preset-button" type="button" data-preset="scale">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9"></path><path d="M10 19V6"></path><path d="M16 19V3"></path><path d="M22 19H2"></path></svg>
+          <span><strong>상행 음계</strong><small>C부터 한 옥타브</small></span>
+        </button>
+        <button class="preset-button" type="button" data-preset="school">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l10-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="16" cy="16" r="3"></circle></svg>
+          <span><strong>학교 종</strong><small>13음 프레이즈</small></span>
+        </button>
+        <button class="preset-button" type="button" data-preset="signal">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+          <span><strong>알림음</strong><small>짧은 3음 신호</small></span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="piano-toast" role="status" aria-live="polite"></div>
+  <script src="/piano.js"></script>
+</body>
+</html>

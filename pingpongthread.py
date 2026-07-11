@@ -14,7 +14,7 @@ import time
 class PingPongThread(ReaderThread, OperationDerived):
     _is_instance = False
     _is_start = False
-    def __init__(self, number=1):
+    def __init__(self, number=1, group_id=0, transport=None, transport_kind="serial"):
         Utils().integer_check(number)
         if 1 <= number and number <= 8: # 1개 이상 8개 이하 
             self._robot_status = {}
@@ -23,9 +23,14 @@ class PingPongThread(ReaderThread, OperationDerived):
             raise ValueError("PingPong robot can connect only with 1 to 8 robots.")
         if not PingPongThread._is_instance:
             PingPongThread._is_instance = True # 인스턴스 생성 확인
-            self._GenerateProtocolInstance = GenerateProtocol(number) # GenrateProtocol instance 생성
             OperationDerived.__init__(self, number, self._robot_status, self._start_check, self._write) # MotorOperation 초기화
-            self.PORT = ConnectionUtils().find_bluetooth_dongle(self._GenerateProtocolInstance.DongleInAction_bytes()) # 동글 포트 찾기
+            self._GenerateProtocolInstance = GenerateProtocol(number, group_id=group_id)
+            self._provided_transport = transport
+            self.transport_kind = transport_kind
+            if transport is None:
+                self.PORT = ConnectionUtils().find_bluetooth_dongle(self._GenerateProtocolInstance.DongleInAction_bytes()) # 동글 포트 찾기
+            else:
+                self.PORT = getattr(transport, "address", None)
             self._play_once_flag = True
         else:
             raise ValueError("PingpongThread instance cannot be constructed above 1.")
@@ -52,16 +57,23 @@ class PingPongThread(ReaderThread, OperationDerived):
 
     # 로봇 연결
     def _connect_robot_thread(self) -> None:
-        ser = None
-        while True:
-            ser = ConnectionUtils().connect_serial_URL(self.PORT)
-            if ser:
-                break
-            else:
+        ser = self._provided_transport
+        if ser is None:
+            while True:
+                ser = ConnectionUtils().connect_serial_URL(self.PORT)
+                if ser:
+                    break
                 self.PORT = ConnectionUtils().find_bluetooth_dongle(self._GenerateProtocolInstance.DongleInAction_bytes())
         ReaderThread.__init__(self, ser, rawProtocol)
         ReaderThread.start(self)
-        self._write(self._GenerateProtocolInstance.PingPongGn_connect_bytes())
+        if self.transport_kind == "ble":
+            time.sleep(0.5)
+            self._write(self._GenerateProtocolInstance.PingPongBLE_connect_bytes())
+        else:
+            self._write(self._GenerateProtocolInstance.PingPongDongle_connect_bytes())
+            if self._GenerateProtocolInstance.connection_number > 1:
+                time.sleep(0.5)
+                self._write(self._GenerateProtocolInstance.PingPongBLE_connect_bytes())
 
     # 쓰기
     def _write(self, protocol_bytes) -> None:
@@ -122,7 +134,13 @@ class PingPongThread(ReaderThread, OperationDerived):
         print("Reconnect with robots.")
         #self.ReaderThreadInstance.serial.close()
         #self.ReaderThreadInstance.reconnect()
-        self._write(self._GenerateProtocolInstance.PingPongGn_connect_bytes())
+        if self.transport_kind == "ble":
+            self._write(self._GenerateProtocolInstance.PingPongBLE_connect_bytes())
+        else:
+            self._write(self._GenerateProtocolInstance.PingPongDongle_connect_bytes())
+            if self._GenerateProtocolInstance.connection_number > 1:
+                time.sleep(0.5)
+                self._write(self._GenerateProtocolInstance.PingPongBLE_connect_bytes())
 
     def get_is_start(self) -> bool:
         if PingPongThread._is_start: # copy

@@ -39,9 +39,9 @@ class MusicProtocol():
             discovery_group=None, pause=False) -> bytes:
         hexlist = [0xFF, 0xFF, 0x01, 0x00, 0x00, 0xA1, 0xE8, 0x00, 0x0B, 0x00, 0x00]
         ### set discovery group
-        hexlist = self._set_discovery_group(hexlist, discovery_group)
+        hexlist = MusicProtocol._set_discovery_group(self, hexlist, discovery_group)
         ### set cube ID (1 to 8 -> 0 to 7)
-        hexlist = self._set_cube_ID(hexlist, cube_ID)
+        hexlist = MusicProtocol._set_cube_ID(self, hexlist, cube_ID)
         ### set pause
         if pause:
             ### pause protocol
@@ -63,7 +63,7 @@ class MusicProtocol():
     def SetMusicNotesInAction_AggregateSetMusicNotes_bytes(self, discovery_group, *in_bytes) -> bytes:
         hexlist = [0xAA, 0xAA, 0x01, 0xAA, 0x10, 0xA2, 0xE8, 0x00, 0x0B, 0x00, 0x00]
         ### set discovery group
-        hexlist = self._set_discovery_group(hexlist, discovery_group)
+        hexlist = MusicProtocol._set_discovery_group(self, hexlist, discovery_group)
         ### set connection number
         hexlist = self._set_connection_number_music(hexlist)
         ### get total data size
@@ -81,9 +81,9 @@ class MusicProtocol():
     def SetMusicNotesInAction_PlayMusicNotes_bytes(self, cube_ID, play, discovery_group=None) -> bytes:
         hexlist = [0xFF, 0xFF, 0x01, 0x00, 0x00, 0xE8, 0xE8, 0x00, 0x0A, 0x02]
         ### set discovery group
-        hexlist = self._set_discovery_group(hexlist, discovery_group)
+        hexlist = MusicProtocol._set_discovery_group(self, hexlist, discovery_group)
         ### set cube ID (1 to 8 -> 0 to 7)
-        hexlist = self._set_cube_ID(hexlist, cube_ID)
+        hexlist = MusicProtocol._set_cube_ID(self, hexlist, cube_ID)
         ### set plat
         if play:
             ### resume (play: 0, resuem: 2 [차이점?])

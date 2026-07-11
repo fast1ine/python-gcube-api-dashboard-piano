@@ -1,0 +1,6 @@
+.web_dashboard.pid
+web_dashboard.log
+wheelchair_umbrella/
+*.md
+__pycache__/
+*.py[cod]

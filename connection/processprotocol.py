@@ -1,5 +1,8 @@
 import time
+import os
 from connection.utils import Utils
+
+PROTOCOL_DEBUG = os.environ.get("PINGPONG_DEBUG", "").lower() in ("1", "true", "yes", "on")
 
 class ProcessProtocol():
     def __init__(self, buffer, buffer_size, is_full_connect, robot_disconnect_flag, transport):
@@ -46,6 +49,10 @@ class ProcessProtocol():
             return self._robot_connection_1(discovery_group)
         elif OP_code == 0xAD: # 2개 이상 연결
             return self._robot_connection_1up(discovery_group)
+        elif OP_code == 0xCE: # BLE single cube connection complete
+            return self._robot_connection_ble_1(discovery_group)
+        elif OP_code == 0xAE: # BLE multi-cube connection complete
+            return self._robot_connection_ble_multi(discovery_group)
         elif OP_code == 0xCA: # 스케줄 설정
             return self._stepper_schedule(discovery_group)
         elif OP_code == 0xCB: # 포인트 설정
@@ -114,6 +121,23 @@ class ProcessProtocol():
                 return self._unregistered()
         else:
             return self._unregistered()
+
+    def _robot_connection_ble_1(self, discovery_group) -> None:
+        connection_number = self.transport._robot_status[discovery_group].controller_status.connection_number
+        if connection_number == 1 and len(self.buffer) == 14:
+            self.transport._robot_status[discovery_group].processed_status.MAC_address[0] = self.buffer[0]
+            self.transport._robot_status[discovery_group].processed_status.MAC_address[1] = self.buffer[1]
+            self.transport._robot_status[discovery_group].processed_status.connected_number = 1
+        return None
+
+    def _robot_connection_ble_multi(self, discovery_group) -> None:
+        connection_number = self.transport._robot_status[discovery_group].controller_status.connection_number
+        if connection_number > 1 and len(self.buffer) == 18:
+            self.transport._robot_status[discovery_group].processed_status.MAC_address[0] = self.buffer[0]
+            self.transport._robot_status[discovery_group].processed_status.MAC_address[1] = self.buffer[1]
+            connected_number = min(connection_number, self.buffer[9] + 1)
+            self.transport._robot_status[discovery_group].processed_status.connected_number = connected_number
+        return None
 
     def _stepper_schedule(self, discovery_group) -> None:
         ######################################################################타임아웃 & 버퍼 잘림 수정 & 아래도 수정 (첫 번째 버퍼는 스케줄 set이 아님.)
@@ -184,5 +208,6 @@ class ProcessProtocol():
         self.transport._robot_status[discovery_group].processed_status.sensor_prox[cube_ID] = prox
         self.transport._robot_status[discovery_group].processed_status.AIN[cube_ID] = ad
         ### print
-        print("CubeID:", cube_ID+1, ", Button:", button, ", Gyro:", [x1, x2, x3], ", Acc:", [xx, yy, zz], ", Prox:", prox, ", AIN:", ad)
+        if PROTOCOL_DEBUG:
+            print("CubeID:", cube_ID+1, ", Button:", button, ", Gyro:", [x1, x2, x3], ", Acc:", [xx, yy, zz], ", Prox:", prox, ", AIN:", ad)
         return None

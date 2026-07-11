@@ -2,9 +2,12 @@
 from abc import ABCMeta
 import serial
 import threading
+import os
 import time
 from connection.connectionutils import ConnectionUtils
 from connection.utils import Utils
+
+PROTOCOL_DEBUG = os.environ.get("PINGPONG_DEBUG", "").lower() in ("1", "true", "yes", "on")
 from protocols.generateprotocol import GenerateProtocol
 
 class Protocol(metaclass=ABCMeta): # metaclass: abstract
@@ -108,7 +111,8 @@ class ReaderThread(threading.Thread):
     def write(self, data) -> None:
         """Thread safe writing (uses lock)"""
         with self._lock:
-            print("Write data:", Utils().bytes_to_hex_str(data))
+            if PROTOCOL_DEBUG:
+                print("Write data:", Utils().bytes_to_hex_str(data))
             self.serial.write(data)
 
     def close(self) -> None:
@@ -141,9 +145,21 @@ class ReaderThread(threading.Thread):
         #print("reconnect")
         connection_number = self.get_connection_number()
         try:
-            PORT = ConnectionUtils().find_bluetooth_dongle(GenerateProtocol(connection_number).DongleInAction_bytes())
-            self.serial = ConnectionUtils().connect_serial_URL(PORT)
-            self.write(GenerateProtocol(connection_number).PingPongGn_connect_bytes())
+            protocol_generator = getattr(self, "_GenerateProtocolInstance", None)
+            if protocol_generator is None:
+                protocol_generator = GenerateProtocol(connection_number)
+            if getattr(self, "transport_kind", "serial") == "ble":
+                self.serial.reconnect()
+                time.sleep(0.5)
+                self.write(protocol_generator.PingPongBLE_connect_bytes())
+            else:
+                PORT = ConnectionUtils().find_bluetooth_dongle(protocol_generator.DongleInAction_bytes())
+                self.serial = ConnectionUtils().connect_serial_URL(PORT)
+                self.PORT = PORT
+                self.write(protocol_generator.PingPongDongle_connect_bytes())
+                if connection_number > 1:
+                    time.sleep(0.5)
+                    self.write(protocol_generator.PingPongBLE_connect_bytes())
             self.alive = True
         except Exception as error:
             self.protocol.connection_lost(error)

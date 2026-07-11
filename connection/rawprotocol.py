@@ -2,6 +2,9 @@ from connection.serialprotocol import Protocol
 from connection.utils import Utils
 from connection.processprotocol import ProcessProtocol
 import time
+import os
+
+PROTOCOL_DEBUG = os.environ.get("PINGPONG_DEBUG", "").lower() in ("1", "true", "yes", "on")
 
 # 프로토콜
 class rawProtocol(Protocol, ProcessProtocol):
@@ -58,8 +61,9 @@ class rawProtocol(Protocol, ProcessProtocol):
         if self.buffer == b"":
             self.previous_time = time.time()
         elif time.time()-self.previous_time > self.timeout: # 타임아웃
-            print("Timeout. Initialize buffer.")
-            print("Timeout buffer:", Utils().bytes_to_hex_str(self.buffer))
+            if PROTOCOL_DEBUG:
+                print("Timeout. Initialize buffer.")
+                print("Timeout buffer:", Utils().bytes_to_hex_str(self.buffer))
             self.init_buffer()
             self.previous_time = time.time()
         
@@ -68,7 +72,8 @@ class rawProtocol(Protocol, ProcessProtocol):
             self.buffer_size = Utils().twobyte_hexlist_to_int(self.buffer[7], self.buffer[8])
         
         if len(self.buffer) == self.buffer_size: # 버퍼 얻음
-            print("Buffer:", Utils().bytes_to_hex_str(self.buffer))  
+            if PROTOCOL_DEBUG:
+                print("Buffer:", Utils().bytes_to_hex_str(self.buffer))
             self.process_data() # 데이터 처리 및 명령
             self.init_buffer() # 버퍼 초기화
             self.evaluate_connection() # 연결 평가
