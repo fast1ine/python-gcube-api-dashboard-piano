@@ -4,3 +4,6 @@ wheelchair_umbrella/
 *.md
 __pycache__/
 *.py[cod]
+
+# keep the project README tracked (overrides *.md above)
+!README.md
